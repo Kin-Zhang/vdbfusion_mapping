@@ -1,6 +1,16 @@
+for glog, please just run the script directly
+
+```bash
+cd [YOUR VDBMAPPING WS]/src
+sudo chmod +x ./assets/scripts/setup_lib.sh
+./assets/scripts/setup_lib.sh
+```
+
+Then just install the OpenVDB is enough
+
 # OpenVDB
 
-Dependencies
+## Dependencies
 
 system
 ```bash
@@ -26,7 +36,7 @@ git clone https://gitee.com/li-ming-golang/tbb \
    && cd tbb && cd build && cmake .. && make -j4 && sudo make install
 ```
 
-===
+## Source code
 
 openvdb from source
 ```bash
@@ -41,9 +51,12 @@ reference from: [http://gitlab.ram-lab.com/ramlab_dataset_sensor/mapping_codebas
 
 more official install and problems, please click [here: https://www.openvdb.org/documentation/doxygen/build.html](https://www.openvdb.org/documentation/doxygen/build.html)
 
+## Note Problems I met
 
 problem may occur in melodic/Ubuntu 18.04
+
 after install boost 1.70.0, it still miss need one more action to link together:
+
 ```bash
 sudo ln -s /usr/local/boost_1_70_0/lib/libboost_iostreams.so.1.70.0 /usr/local/lib/libboost_iostreams.so.1.70.0
 ```

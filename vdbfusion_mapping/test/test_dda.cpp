@@ -10,8 +10,6 @@
 #include <openvdb/openvdb.h>
 
 #include "timer.h"
-#include "utils.h"
-
 
 float ComputeSDF(const Eigen::Vector3d &origin, const Eigen::Vector3d &point,
                  const Eigen::Vector3d &voxel_center) {
@@ -157,7 +155,7 @@ int main(int argc, char *argv[]) {
         }
       } while (dda.step());
     });
-    TOC("[DDA] searching active voxel: ", true);
+    TOC("DDA searching active voxel", true);
     std::cout << "number of active voxels (repeated counted): " << cnt << std::endl;
   }
 
@@ -193,7 +191,6 @@ int main(int argc, char *argv[]) {
       std::vector<openvdb::math::Ray<float>::TimeSpan> times;
       volume_hdda.hits(ray, tsdf_acc, times);
       for (const auto &t : times) {
-        // std::cout << t.t0 << " " << t.t1 << std::endl;
         openvdb::math::Ray<float> ray_sub =
             openvdb::math::Ray<float>(eye, dir, t0, t1).worldToIndex(*tsdf);
         ray_sub.setTimes(t.t0, t.t1);
@@ -201,13 +198,12 @@ int main(int argc, char *argv[]) {
         do {
           const openvdb::Coord voxel = dda.voxel();
           if (tsdf_acc.isValueOn(voxel)) {
-            // std::cout << "active voxel: " << voxel << std::endl;
             cnt++;
           }
         } while (dda.step());
       }
     });
-    TOC("[HDDA] searching active voxel: ", true);
+    TOC("HDDA searching active voxel: ", true);
     std::cout << "number of active voxels (repeated counted): " << cnt << std::endl;
   }
 
