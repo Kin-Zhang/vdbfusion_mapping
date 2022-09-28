@@ -1,0 +1,23 @@
+# input topic name setting ===========> Please change according to your dataset
+lidar_topic: "/odom_lidar"
+odom_topic: "/auto_odom"
+
+debug_print: true
+
+# Ignore points closer than this value (meters) (default 0.4)
+min_scan_range: 0.4
+
+# Ignore points far than this value (meters) (default 12.0)
+max_scan_range: 12.0
+
+# Check on paper
+sdf_space_carving: true
+
+sdf_trunc: 0.15
+
+# voxel resolution (meters)
+sdf_voxel_size: 0.04
+
+# min weight setting TODO add details description
+sdf_min_weight: 0.5
+sdf_deactivate: 0.05

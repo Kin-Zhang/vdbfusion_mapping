@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="vdbfusion_ros" type="vdbfusion_mapping" name="vdbfusion_mapping_node" output="screen">
+    <rosparam command="load" file="$(find vdbfusion_ros)/config/vdbfusion_mapping.yaml"/>
+  </node>
+</launch>
