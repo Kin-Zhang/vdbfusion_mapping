@@ -85,10 +85,11 @@ void VDBFusionMapper::points_callback(
   // TODO voxblox bundlerays process
   // multi-thread index also
   Eigen::Vector3d origin = tf_matrix.block<3, 1>(0, 3);
-  tsdf_volume.Integrate(points, origin, common::WeightFunction::linear_weight);
-  TOC("TSDF Intergrate", _debug_print);
-  tsdf_volume_hdda.Integrate_HDDA(points, origin, common::WeightFunction::linear_weight);
-  TOC("TSDF HDDA Intergrate", _debug_print);
+  TRE;
+  tsdf_volume.Integrate(points, origin, common::WeightFunction::constant_weight);
+  TOC("TSDF Integrate", _debug_print);
+  // tsdf_volume_hdda.Integrate_HDDA(points, origin, common::WeightFunction::linear_weight);
+  // TOC("TSDF HDDA Intergrate", _debug_print);
 
   timer_total.End("WHOLE PROCESS", _debug_print);
   dequeue++;
