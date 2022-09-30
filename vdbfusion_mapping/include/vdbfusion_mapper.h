@@ -64,7 +64,7 @@ public:
 private:
   // variables
   Config config_;
-  vdbfusion::VDBVolume tsdf_volume;
+  vdbfusion::VDBVolume tsdf_volume, tsdf_volume_hdda;
 
   // Node handles.
   ros::NodeHandle nh_;

@@ -25,6 +25,8 @@ VDBFusionMapper::VDBFusionMapper(const ros::NodeHandle &nh,
   openvdb::initialize();
   tsdf_volume = vdbfusion::VDBVolume(config_.sdf_voxel_size, config_.sdf_trunc,
                                      config_.sdf_space_carving);
+  tsdf_volume_hdda = vdbfusion::VDBVolume(config_.sdf_voxel_size, config_.sdf_trunc,
+                                     config_.sdf_space_carving);
 }
 
 void VDBFusionMapper::odom_callback(const nav_msgs::Odometry::ConstPtr &input) {
@@ -85,6 +87,8 @@ void VDBFusionMapper::points_callback(
   Eigen::Vector3d origin = tf_matrix.block<3, 1>(0, 3);
   tsdf_volume.Integrate(points, origin, common::WeightFunction::linear_weight);
   TOC("TSDF Intergrate", _debug_print);
+  tsdf_volume_hdda.Integrate_HDDA(points, origin, common::WeightFunction::linear_weight);
+  TOC("TSDF HDDA Intergrate", _debug_print);
 
   timer_total.End("WHOLE PROCESS", _debug_print);
   dequeue++;

@@ -41,11 +41,8 @@ public:
   /// @brief Integrates a new (globally aligned) PointCloud into the current
   /// tsdf_ volume.
   // the improved implementation using VolumeHDDA
-  void Integrate_HDDA(const std::vector<Eigen::Vector3d> &points,
-                      const Eigen::Vector3d &origin, const bool space_carving,
-                      const std::function<float(float)> &weighting_function,
-                      std::vector<std::pair<openvdb::Coord, float>>
-                          &v_integrate_sdf_voxel_weight);
+  void Integrate_HDDA(const std::vector<Eigen::Vector3d> &points, const Eigen::Vector3d &origin,
+                      const std::function<float(float)> &weighting_function);
 
   /// @brief Fuse a new given sdf value at the given voxel location, thread-safe
   void UpdateTSDF(const float &sdf, const openvdb::Coord &voxel,
