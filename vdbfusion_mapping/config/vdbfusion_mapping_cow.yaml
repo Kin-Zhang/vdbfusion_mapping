@@ -10,11 +10,9 @@ world_frame: "map"
 
 debug_print: true
 
-# Ignore points closer than this value (meters) (default 0.4)
-min_scan_range: 0.1
-
-# Ignore points far than this value (meters) (default 12.0)
-max_scan_range: 5.0
+min_scan_range: 0.1 # Ignore points closer than this value (meters) (default 0.4)
+max_scan_range: 5.0 # Ignore points far than this value (meters) (default 12.0)
+max_height: 20.0 # ignore points higher than this value default 5.0
 
 # Check on paper
 sdf_space_carving: true

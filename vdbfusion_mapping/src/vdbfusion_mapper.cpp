@@ -174,6 +174,7 @@ void VDBFusionMapper::setConfig() {
 
   nh_private_.getParam("min_scan_range", config_.min_scan_range);
   nh_private_.getParam("max_scan_range", config_.max_scan_range);
+  nh_private_.getParam("max_height", config_.max_height);
   nh_private_.getParam("sdf_space_carving", config_.sdf_space_carving);
   nh_private_.getParam("sdf_trunc", config_.sdf_trunc);
   nh_private_.getParam("sdf_voxel_size", config_.sdf_voxel_size);
