@@ -11,92 +11,93 @@
 namespace vdbfusion_mapping {
 VDBFusionMapper::VDBFusionMapper(const ros::NodeHandle &nh,
                                  const ros::NodeHandle &nh_private)
-    : nh_(nh), nh_private_(nh_private) {
+    : nh_(nh), nh_private_(nh_private), retrive_mpose(nh, nh_private) {
 
   setConfig();
   vdbmap_pub = nh_.advertise<sensor_msgs::PointCloud2>("/vdbmap", 10);
   points_sub =
       nh_.subscribe(_lidar_topic, 10, &VDBFusionMapper::points_callback, this);
-  odom_sub =
-      nh_.subscribe(_odom_topic, 10, &VDBFusionMapper::odom_callback, this);
+
   save_map_srv = nh_.advertiseService("/save_map",
                                       &VDBFusionMapper::saveMap_callback, this);
   // initial tsdf volume from vdbfusion
   openvdb::initialize();
   tsdf_volume = vdbfusion::VDBVolume(config_.sdf_voxel_size, config_.sdf_trunc,
                                      config_.sdf_space_carving);
-  tsdf_volume_hdda = vdbfusion::VDBVolume(config_.sdf_voxel_size, config_.sdf_trunc,
-                                     config_.sdf_space_carving);
-}
-
-void VDBFusionMapper::odom_callback(const nav_msgs::Odometry::ConstPtr &input) {
-  m_message.lock();
-  Eigen::Matrix4d tf = Eigen::Matrix4d::Identity();
-  Eigen::Quaterniond q(
-      input->pose.pose.orientation.w, input->pose.pose.orientation.x,
-      input->pose.pose.orientation.y, input->pose.pose.orientation.z);
-  Eigen::Vector3d t(input->pose.pose.position.x, input->pose.pose.position.y,
-                    input->pose.pose.position.z);
-  tf.block<3, 3>(0, 0) = q.toRotationMatrix();
-  tf.block<3, 1>(0, 3) = t;
-  buf_poses.push(tf);
-  m_message.unlock();
-  enqueue++;
+  // tsdf_volume_hdda = vdbfusion::VDBVolume(config_.sdf_voxel_size, config_.sdf_trunc,
+  //                                    config_.sdf_space_carving);
 }
 
 void VDBFusionMapper::points_callback(
     const sensor_msgs::PointCloud2::ConstPtr &input) {
-  if (buf_poses.empty())
-    return;
-  LOG_IF(INFO, _debug_print)
-      << "(Processed/Input): (" << dequeue << " / " << enqueue << ")";
-  common::Timer timer_total;
-  m_message.lock();
-  // auto timestamp = buf_poses.end()->first;
-  // Eigen::Matrix4d tf_matrix = buf_poses.end()->second;
-  Eigen::Matrix4d tf_matrix = buf_poses.front();
-  buf_poses.pop();
-  m_message.unlock();
 
-  pcl::PointCloud<pcl::PointXYZI> cloud, cloud_filter;
-  pcl::fromROSMsg(*input, cloud);
+  Eigen::Matrix4d tf_matrix = Eigen::Matrix4d::Identity();
+  if(!retrive_mpose.lookUpTransformfromSource(input, tf_matrix)){
+    LOG(WARNING) << "Didn't find the pair pose, skip this message";
+    return;
+  }
+  // Horrible hack fix to fix color parsing colors in PCL.
+  bool color_pointcloud = false;
+  bool has_intensity = false;
+  if (input->fields[0].name == std::string("rgb"))
+    color_pointcloud = true;
+  else if (input->fields[0].name == std::string("intensity"))
+    has_intensity = true;
 
   // filter by range
-  pcl::PointXYZI p;
+  pcl::PointCloud<pcl::PointXYZ> cloud_filter, trans_cloud;
+
+  // Convert differently depending on RGB or I type.
+  if (color_pointcloud){
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud_pcl;
+    pcl::fromROSMsg(*input, pointcloud_pcl);
+    filterptRange(pointcloud_pcl, cloud_filter);
+  }
+  else if (has_intensity){
+    pcl::PointCloud<pcl::PointXYZI> pointcloud_pcl;
+    pcl::fromROSMsg(*input, pointcloud_pcl);
+    filterptRange(pointcloud_pcl, cloud_filter);
+  }
+  else{
+    pcl::PointCloud<pcl::PointXYZ> pointcloud_pcl;
+    pcl::fromROSMsg(*input, pointcloud_pcl);
+    filterptRange(pointcloud_pcl, cloud_filter);
+  }
+
+  // TODO voxblox bundlerays process
+  // multi-thread index also
+  TIC;
+  pcl::transformPointCloud(cloud_filter, trans_cloud, tf_matrix.cast<float>());
+  std::vector<Eigen::Vector3d> points, points_bundle;
+  common::PCL2Eigen(trans_cloud, points);
+  Eigen::Vector3d origin = tf_matrix.block<3, 1>(0, 3);
+  tsdf_volume.Integrate(points, origin, common::WeightFunction::constant_weight);
+  TOC("TSDF Integrate", _debug_print);
+  // tsdf_volume_hdda.Integrate_HDDA(points, origin, common::WeightFunction::linear_weight);
+  // TOC("TSDF HDDA Intergrate", _debug_print);
+
+  if (_debug_print)
+    std::cout << "------------------------------------------------------"
+              << std::endl;
+}
+
+template <typename PCLPoint>
+void VDBFusionMapper::filterptRange(const typename pcl::PointCloud<PCLPoint>& pointcloud_pcl, 
+                                    pcl::PointCloud<pcl::PointXYZ>& cloud_filter){
+  pcl::PointXYZ p;
   double p_radius;
-  for (auto item = cloud.begin(); item != cloud.end(); item++) {
+  for (auto item = pointcloud_pcl.begin(); item != pointcloud_pcl.end(); item++) {
     p.x = (double)item->x;
     p.y = (double)item->y;
     p.z = (double)item->z;
-    p.intensity = (double)item->intensity;
 
     p_radius = sqrt(pow(p.x, 2.0) + pow(p.y, 2.0));
     if (config_.min_scan_range < p_radius &&
         p_radius < config_.max_scan_range && p.z < config_.max_height)
       cloud_filter.push_back(p);
   }
-
-  TIC;
-  pcl::PointCloud<pcl::PointXYZI> trans_cloud;
-  pcl::transformPointCloud(cloud_filter, trans_cloud, tf_matrix.cast<float>());
-  std::vector<Eigen::Vector3d> points, points_bundle;
-  common::PCL2Eigen(trans_cloud, points);
-  
-  // TODO voxblox bundlerays process
-  // multi-thread index also
-  Eigen::Vector3d origin = tf_matrix.block<3, 1>(0, 3);
-  TRE;
-  tsdf_volume.Integrate(points, origin, common::WeightFunction::constant_weight);
-  TOC("TSDF Integrate", _debug_print);
-  // tsdf_volume_hdda.Integrate_HDDA(points, origin, common::WeightFunction::linear_weight);
-  // TOC("TSDF HDDA Intergrate", _debug_print);
-
-  timer_total.End("WHOLE PROCESS", _debug_print);
-  dequeue++;
-  if (_debug_print)
-    std::cout << "------------------------------------------------------"
-              << std::endl;
 }
+
 bool VDBFusionMapper::saveMap_callback(
     vdbfusion_mapping_msgs::SaveMap::Request &req,
     vdbfusion_mapping_msgs::SaveMap::Response &res) {
@@ -169,7 +170,6 @@ bool VDBFusionMapper::saveMap_callback(
 }
 void VDBFusionMapper::setConfig() {
   nh_private_.getParam("lidar_topic", _lidar_topic);
-  nh_private_.getParam("odom_topic", _odom_topic);
   nh_private_.getParam("debug_print", _debug_print);
 
   nh_private_.getParam("min_scan_range", config_.min_scan_range);
@@ -178,7 +178,7 @@ void VDBFusionMapper::setConfig() {
   nh_private_.getParam("sdf_trunc", config_.sdf_trunc);
   nh_private_.getParam("sdf_voxel_size", config_.sdf_voxel_size);
   nh_private_.getParam("sdf_min_weight", config_.sdf_min_weight);
-
+  
   LOG(INFO) << "==========> Setting Config Success, start for running";
 }
 

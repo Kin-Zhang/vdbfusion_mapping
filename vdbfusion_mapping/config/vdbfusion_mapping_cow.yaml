@@ -1,0 +1,41 @@
+# input topic name setting ===========> Please change according to your dataset
+lidar_topic: "/camera/depth_registered/points"
+
+pose_source: 1 # [0:tf_tree, 1:tf_topic, 2:odom_topic]
+tf_topic: "/kinect/vrpn_client/estimated_transform"
+# odom_topic_: "/auto_odom"
+
+timestamp_tolerance_ms: 1
+world_frame: "map"
+
+debug_print: true
+
+# Ignore points closer than this value (meters) (default 0.4)
+min_scan_range: 0.1
+
+# Ignore points far than this value (meters) (default 12.0)
+max_scan_range: 5.0
+
+# Check on paper
+sdf_space_carving: true
+
+sdf_trunc: 0.06
+
+# voxel resolution (meters)
+sdf_voxel_size: 0.02
+
+# min weight setting TODO add details description
+sdf_min_weight: 0.5
+sdf_deactivate: 0.05
+
+# Static Transform
+invert_static_tf: True
+# Translation
+tx: 0.00114049
+ty: 0.0450936
+tz: 0.0430765
+# Rotation Quaternion
+x: 0.0924132
+y: 0.0976455
+z: 0.0702949
+w: 0.9884249

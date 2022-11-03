@@ -39,7 +39,7 @@ inline bool isPointFinite(const PointType &point) {
 }
 
 template <typename Scalar, typename PointType>
-void PCL2Eigen(const pcl::PointCloud<PointType> &ptcloud_pcl,
+inline void PCL2Eigen(const pcl::PointCloud<PointType> &ptcloud_pcl,
                std::vector<Eigen::Matrix<Scalar, 3, 1>> &ptcloud_eig) {
   ptcloud_eig.clear();
   ptcloud_eig.reserve(ptcloud_pcl.size());

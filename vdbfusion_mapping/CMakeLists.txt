@@ -31,6 +31,7 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/cmake/libigl/include")
 
 cs_add_library(${PROJECT_NAME}
         src/vdbfusion_mapper.cpp
+        src/transform.cpp
         )
 
 ###############

@@ -21,14 +21,18 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
+
 #include "MarchingCubesConst.h"
 #include "VDBVolume.h"
+#include "transform.h"
+
 #include "openvdb/openvdb.h"
 #include "vdbfusion_mapping_msgs/SaveMap.h"
 
 namespace vdbfusion_mapping {
 class VDBFusionMapper {
 public:
+  typedef tf::StampedTransform Transformation;
   struct Config {
     int ros_spinner_threads = std::thread::hardware_concurrency();
 
@@ -57,7 +61,12 @@ public:
   // function
   void setConfig();
   void mapIntegrateProcess();
+  
+  void processPointCloudMessage(const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg, const Eigen::Matrix4d& tf_matrix);
 
+  template <typename PCLPoint>
+  void filterptRange(const typename pcl::PointCloud<PCLPoint>& pointcloud_pcl, 
+                                    pcl::PointCloud<pcl::PointXYZ>& cloud_filter);
   // IO.
   const Config &getConfig() const { return config_; }
 
@@ -65,7 +74,8 @@ private:
   // variables
   Config config_;
   vdbfusion::VDBVolume tsdf_volume, tsdf_volume_hdda;
-
+  common::Transformer retrive_mpose;
+  
   // Node handles.
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -74,13 +84,10 @@ private:
   ros::Publisher vdbmap_pub;
   ros::ServiceServer save_map_srv;
 
-  std::mutex m_message, m_fullmap;
+  std::mutex m_fullmap;
 
-  // queue buffer
-  std::queue<Eigen::Matrix4d> buf_poses;
-
-  std::string _odom_topic = "/auto_odom";
   std::string _lidar_topic = "/odom_lidar";
+
   bool _debug_print = true;
   int enqueue = 0, dequeue = 0;
 };
