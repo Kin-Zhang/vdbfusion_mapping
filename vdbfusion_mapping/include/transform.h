@@ -13,7 +13,25 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
+#define M_PI 3.14159265
 namespace common {
+
+inline void transform2Eigen(Eigen::Matrix4d& res, double tx, double ty, double tz, double w, double x, double y, double z){
+    Eigen::Vector3d t(tx, ty, tz);
+    Eigen::Quaterniond q(w, x, y, z);
+
+    res.block<3, 3>(0, 0) = q.toRotationMatrix();
+    res.block<3, 1>(0, 3) = t;
+};
+inline void SixVector2Eigen(Eigen::Matrix4d& res, double tx, double ty, double tz, double roll, double pitch, double yaw){
+    Eigen::Vector3d t(tx, ty, tz);
+    Eigen::Quaterniond q;
+    q = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()) 
+      * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) 
+      * Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
+    res.block<3, 3>(0, 0) = q.toRotationMatrix();
+    res.block<3, 1>(0, 3) = t;
+};
 // part of code from voxblox: https://github.com/ethz-asl/voxblox
 // part of reference vdbfusion_ros: https://github.com/PRBonn/vdbfusion_ros
 class Transformer {

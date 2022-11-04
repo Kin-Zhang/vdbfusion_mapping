@@ -48,11 +48,10 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
             ROS_ERROR_STREAM(
                 "Error getting TF transform from sensor data: " << ex.what());
         }
-        Eigen::Matrix3d rot_matrix;
-        Eigen::Vector3d t(T_G_C.getOrigin().getX(), T_G_C.getOrigin().getY(), T_G_C.getOrigin().getZ());
-        tf::matrixTFToEigen(tf::Matrix3x3(T_G_C.getRotation()), rot_matrix);
-        tf_matrix.block<3, 3>(0, 0) = rot_matrix;
-        tf_matrix.block<3, 1>(0, 3) = t;
+        auto trans = T_G_C.getOrigin();
+        auto rota = T_G_C.getRotation();
+        transform2Eigen(tf_matrix, trans.getX(), trans.getY(), trans.getZ(),
+                        rota.getW(), rota.getX(),rota.getY(), rota.getZ());
         return true;
     }
     else{
@@ -66,6 +65,8 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
         for (; it != T_Matrixs.end(); it++) {
             i++;
             if (it->first >= timestamp) {
+                // If the current transform is newer than the requested timestamp, we need
+                // to break.
                 if ((it->first - timestamp).toNSec() <= tolerance_ns_){
                     match_found = true;
                 }
@@ -84,26 +85,45 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
             LOG(INFO) << "Found! id: "<< i << ", Finished copy and erase";
             return true;
         }
-        else
-            return false;
-        // TODO interpolate 
+        // TODO still have problems ====> TODO find it out 
         // else{
-        //     if (i == Mpose_queue_.size()) {
-        //         ROS_WARN_STREAM_THROTTLE(30, "No match found for transform timestamp: " << timestamp);
+        //     // If we think we have an inexact match, have to check that we're still
+        //     // within bounds and interpolate.
+        //     if (it == T_Matrixs.begin() || it == T_Matrixs.end()) {
+        //         ROS_WARN_STREAM_THROTTLE(
+        //             30, "No match found for transform timestamp: "
+        //                     << timestamp
+        //                     << " Queue front: " << T_Matrixs.front().first
+        //                     << " back: " << T_Matrixs.back().first);
         //         return false;
         //     }
-        //     int j = i;
-        //     int64_t newest_timestamp_ns = time_queue_[j].toNSec();
-        //     --j;
-        //     int64_t oldest_timestamp_ns = time_queue_[j].toNSec();
+        //     Eigen::Matrix4d tf_matrix_newest = it->second;
+        //     int64_t offset_newest_ns = (it->first - timestamp).toNSec();
+        //     // We already checked that this is not the beginning.
+        //     it--;
+        //     Eigen::Matrix4d tf_matrix_oldest = it->second;
+        //     int64_t offset_oldest_ns = (timestamp - it->first).toNSec();
 
-        //     double alpha = 0.0;
-        //     if (newest_timestamp_ns != oldest_timestamp_ns) {
-        //         alpha = static_cast<double>(timestamp.toNSec() - oldest_timestamp_ns) /
-        //                 static_cast<double>(newest_timestamp_ns - oldest_timestamp_ns);
-        //     }
-        //     transform.transform = interpolate(time_queue_[j], tf_newest.transform, alpha);
+        //     // Interpolate between the two transformations using the exponential map.
+        //     float t_diff_ratio = static_cast<float>(offset_oldest_ns) / static_cast<float>(offset_newest_ns + offset_oldest_ns);
+
+        //     // 
+        //     Eigen::Matrix4d diff_tf = tf_matrix_oldest.inverse() * tf_matrix_newest;
+
+        //     double roll = M_PI/atan2(diff_tf(2,1),diff_tf(2,2));
+        //     double pitch = M_PI/atan2(-diff_tf(2,0), std::pow( diff_tf(2,1)*diff_tf(2,1) +diff_tf(2,2)*diff_tf(2,2) ,0.5));
+        //     double yaw = M_PI/atan2( diff_tf(1,0),diff_tf(0,0));
+        //     Eigen::Matrix<double, 6, 1> pose_6axis;
+        //     pose_6axis << diff_tf(0,3), diff_tf(1,3), diff_tf(2,3), roll, pitch, yaw;
+
+        //     Eigen::Matrix<double, 6, 1> sample_diff = t_diff_ratio * pose_6axis;
+        //     SixVector2Eigen(diff_tf, sample_diff(0,0), sample_diff(1,0), sample_diff(2,0),
+        //                              sample_diff(3,0), sample_diff(4,0), sample_diff(5,0));
+
+        //     tf_matrix = tf_matrix_oldest*diff_tf;
+        //     return true;
         // }
+        return false;
     }
 
 }
@@ -111,26 +131,17 @@ void Transformer::tfCallback(const geometry_msgs::TransformStamped& transform_ms
     geometry_msgs::Transform tf_msg_ = transform_msg.transform;
 
     Eigen::Matrix4d tf_matrix = Eigen::Matrix4d::Identity();
-    Eigen::Vector3d t(tf_msg_.translation.x, tf_msg_.translation.y, tf_msg_.translation.z);
-    Eigen::Quaterniond q(
-        tf_msg_.rotation.w, tf_msg_.rotation.x,
-        tf_msg_.rotation.y, tf_msg_.rotation.z);
+    transform2Eigen(tf_matrix, tf_msg_.translation.x, tf_msg_.translation.y, tf_msg_.translation.z,
+    tf_msg_.rotation.w, tf_msg_.rotation.x,tf_msg_.rotation.y, tf_msg_.rotation.z);
 
-    tf_matrix.block<3, 3>(0, 0) = q.toRotationMatrix();
-    tf_matrix.block<3, 1>(0, 3) = t;
     T_Matrixs.push_back(std::make_pair(transform_msg.header.stamp, tf_matrix));
 }
 void Transformer::odomCallback(const nav_msgs::Odometry::ConstPtr &input) {
 
     Eigen::Matrix4d tf_matrix = Eigen::Matrix4d::Identity();
-    Eigen::Vector3d t(input->pose.pose.position.x, input->pose.pose.position.y,
-                        input->pose.pose.position.z);
-    Eigen::Quaterniond q(
-        input->pose.pose.orientation.w, input->pose.pose.orientation.x,
-        input->pose.pose.orientation.y, input->pose.pose.orientation.z);
-
-    tf_matrix.block<3, 3>(0, 0) = q.toRotationMatrix();
-    tf_matrix.block<3, 1>(0, 3) = t;
+    transform2Eigen(tf_matrix, input->pose.pose.position.x, input->pose.pose.position.y, input->pose.pose.position.z,
+    input->pose.pose.orientation.w, input->pose.pose.orientation.x,
+    input->pose.pose.orientation.y, input->pose.pose.orientation.z);
     T_Matrixs.push_back(std::make_pair(input->header.stamp, tf_matrix));
 }
 }  
