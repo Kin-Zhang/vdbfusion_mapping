@@ -1,5 +1,6 @@
 #include <glog/logging.h>
 #include <ros/ros.h>
+#include <thread>
 
 #include "vdbfusion_mapper.h"
 
@@ -18,7 +19,8 @@ int main(int argc, char **argv) {
   ros::NodeHandle nh("");
   ros::NodeHandle nh_private("~");
   vdbfusion_mapping::VDBFusionMapper mapper(nh, nh_private);
-
+  std::thread integrate_thread{&vdbfusion_mapping::VDBFusionMapper::mapIntegrateProcess, &mapper};
+  
   // Setup spinning.
   ros::AsyncSpinner spinner(mapper.getConfig().ros_spinner_threads);
   spinner.start();

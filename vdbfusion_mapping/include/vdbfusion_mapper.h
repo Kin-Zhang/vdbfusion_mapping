@@ -84,10 +84,11 @@ private:
   ros::Publisher vdbmap_pub;
   ros::ServiceServer save_map_srv;
 
-  std::mutex m_fullmap;
+  std::mutex m_fullmap, m_data;
+  std::queue<std::pair<Eigen::Matrix4d, std::vector<Eigen::Vector3d>>> data_buf;
+  std::thread integrate_thread;
 
   std::string _lidar_topic = "/odom_lidar";
-
   bool _debug_print = true;
   int enqueue = 0, dequeue = 0;
 };

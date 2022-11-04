@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 
 #include <igl/write_triangle_mesh.h>
+#include <thread>
 
 // our define
 #include "timer.h"
@@ -28,12 +29,43 @@ VDBFusionMapper::VDBFusionMapper(const ros::NodeHandle &nh,
   //                                    config_.sdf_space_carving);
 }
 
+void VDBFusionMapper::mapIntegrateProcess(){
+  while(ros::ok()){
+    m_data.lock();
+    if (data_buf.empty()) {
+      std::chrono::seconds dura(5);
+      m_data.unlock();
+      LOG(INFO) << "There is no data now, finished all data";
+      std::this_thread::sleep_for(dura);
+      continue;
+    }
+
+    TIC;
+    int total_num = data_buf.size();
+    LOG(INFO) << "Total data frames need to integrate: " << total_num;
+    Eigen::Matrix4d tf_matrix=data_buf.front().first;
+    std::vector<Eigen::Vector3d> points=data_buf.front().second;
+    data_buf.pop();
+    m_data.unlock();
+
+    Eigen::Vector3d origin = tf_matrix.block<3, 1>(0, 3);
+    tsdf_volume.Integrate(points, origin, common::WeightFunction::constant_weight);
+    LOG_IF(INFO, _debug_print) << "cloud point size: " << points.size();
+    TOC("TSDF Integrate", _debug_print);
+    // tsdf_volume_hdda.Integrate_HDDA(points, origin, common::WeightFunction::linear_weight);
+    // TOC("TSDF HDDA Intergrate", _debug_print);
+
+    if (_debug_print)
+      std::cout << "------------------------------------------------------"
+                << std::endl;
+  }
+
+}
 void VDBFusionMapper::points_callback(
     const sensor_msgs::PointCloud2::ConstPtr &input) {
-
   Eigen::Matrix4d tf_matrix = Eigen::Matrix4d::Identity();
   if(!retrive_mpose.lookUpTransformfromSource(input, tf_matrix)){
-    LOG(WARNING) << "Didn't find the pair pose, skip this message";
+    // LOG(WARNING) << "Didn't find the pair pose, skip this message";
     return;
   }
   // Horrible hack fix to fix color parsing colors in PCL.
@@ -70,15 +102,10 @@ void VDBFusionMapper::points_callback(
   pcl::transformPointCloud(cloud_filter, trans_cloud, tf_matrix.cast<float>());
   std::vector<Eigen::Vector3d> points, points_bundle;
   common::PCL2Eigen(trans_cloud, points);
-  Eigen::Vector3d origin = tf_matrix.block<3, 1>(0, 3);
-  tsdf_volume.Integrate(points, origin, common::WeightFunction::constant_weight);
-  TOC("TSDF Integrate", _debug_print);
-  // tsdf_volume_hdda.Integrate_HDDA(points, origin, common::WeightFunction::linear_weight);
-  // TOC("TSDF HDDA Intergrate", _debug_print);
-
-  if (_debug_print)
-    std::cout << "------------------------------------------------------"
-              << std::endl;
+  m_data.lock();
+  data_buf.push(std::make_pair(tf_matrix, points));
+  m_data.unlock();
+  // integrate_thread.join();
 }
 
 template <typename PCLPoint>

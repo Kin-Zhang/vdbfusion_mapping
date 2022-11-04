@@ -5,6 +5,6 @@
     <rosparam command="load" file="$(find vdbfusion_ros)/config/vdbfusion_mapping_cow.yaml"/>
   </node>
   <arg name="bag_file" default="/home/kin/bags/cow_eth_data/data.bag" />
-  <node pkg="rosbag" type="play" name="bag_play" args="$(arg bag_file) --clock -r 0.5" required="false"/>
+  <node pkg="rosbag" type="play" name="bag_play" args="$(arg bag_file) --clock -r 1.0" required="false"/>
 
 </launch>
