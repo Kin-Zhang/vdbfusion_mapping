@@ -2,6 +2,7 @@
 #include <glog/logging.h>
 #include <tf_conversions/tf_eigen.h>
 
+#include "kindr/minimal/quat-transformation.h"
 #include "transform.h"
 
 namespace common{
@@ -86,43 +87,61 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
             return true;
         }
         // TODO still have problems ====> TODO find it out 
-        // else{
-        //     // If we think we have an inexact match, have to check that we're still
-        //     // within bounds and interpolate.
-        //     if (it == T_Matrixs.begin() || it == T_Matrixs.end()) {
-        //         ROS_WARN_STREAM_THROTTLE(
-        //             30, "No match found for transform timestamp: "
-        //                     << timestamp
-        //                     << " Queue front: " << T_Matrixs.front().first
-        //                     << " back: " << T_Matrixs.back().first);
-        //         return false;
-        //     }
-        //     Eigen::Matrix4d tf_matrix_newest = it->second;
-        //     int64_t offset_newest_ns = (it->first - timestamp).toNSec();
-        //     // We already checked that this is not the beginning.
-        //     it--;
-        //     Eigen::Matrix4d tf_matrix_oldest = it->second;
-        //     int64_t offset_oldest_ns = (timestamp - it->first).toNSec();
+        else{
+            // If we think we have an inexact match, have to check that we're still
+            // within bounds and interpolate.
+            if (it == T_Matrixs.begin() || it == T_Matrixs.end()) {
+                ROS_WARN_STREAM_THROTTLE(
+                    30, "No match found for transform timestamp: "
+                            << timestamp
+                            << " Queue front: " << T_Matrixs.front().first
+                            << " back: " << T_Matrixs.back().first);
+                return false;
+            }
+            Eigen::Matrix4d tf_matrix_newest = it->second;
+            int64_t offset_newest_ns = (it->first - timestamp).toNSec();
+            // We already checked that this is not the beginning.
+            it--;
+            Eigen::Matrix4d tf_matrix_oldest = it->second;
+            int64_t offset_oldest_ns = (timestamp - it->first).toNSec();
 
-        //     // Interpolate between the two transformations using the exponential map.
-        //     float t_diff_ratio = static_cast<float>(offset_oldest_ns) / static_cast<float>(offset_newest_ns + offset_oldest_ns);
+            // Interpolate between the two transformations using the exponential map.
+            float t_diff_ratio = static_cast<float>(offset_oldest_ns) / static_cast<float>(offset_newest_ns + offset_oldest_ns);
+            
+            Eigen::Matrix<double, 3, 3> tmp;
+            tmp = tf_matrix_newest.block<3, 3>(0, 0);
+            kindr::minimal::RotationQuaternionTemplate<double> rot_new(tmp);
+            Eigen::Matrix<double, 3, 1> pos_new = tf_matrix_newest.block<3, 1>(0, 3);
+            kindr::minimal::QuatTransformationTemplate<double> tf_newest(rot_new, pos_new);
 
-        //     // 
-        //     Eigen::Matrix4d diff_tf = tf_matrix_oldest.inverse() * tf_matrix_newest;
+            tmp = tf_matrix_oldest.block<3, 3>(0, 0);
+            kindr::minimal::RotationQuaternionTemplate<double> rot_old(tmp);
+            Eigen::Matrix<double, 3, 1> pos_old = tf_matrix_oldest.block<3, 1>(0, 3);
+            kindr::minimal::QuatTransformationTemplate<double> tf_oldest(rot_old, pos_old);
 
-        //     double roll = M_PI/atan2(diff_tf(2,1),diff_tf(2,2));
-        //     double pitch = M_PI/atan2(-diff_tf(2,0), std::pow( diff_tf(2,1)*diff_tf(2,1) +diff_tf(2,2)*diff_tf(2,2) ,0.5));
-        //     double yaw = M_PI/atan2( diff_tf(1,0),diff_tf(0,0));
-        //     Eigen::Matrix<double, 6, 1> pose_6axis;
-        //     pose_6axis << diff_tf(0,3), diff_tf(1,3), diff_tf(2,3), roll, pitch, yaw;
+            Eigen::Matrix<double, 6, 1> diff_vector = (tf_oldest.inverse() * tf_newest).log();
+            
+            kindr::minimal::QuatTransformationTemplate<double> interpolate_tf;
+            interpolate_tf = tf_oldest * kindr::minimal::QuatTransformationTemplate<double>::exp(t_diff_ratio*diff_vector);
+            
+            tf_matrix.block<3, 3>(0, 0) = interpolate_tf.getRotationMatrix();
+            tf_matrix.block<3, 1>(0, 3) = interpolate_tf.getPosition();
+            // ?????
+            // Eigen::Matrix4d diff_tf = tf_matrix_oldest.inverse() * tf_matrix_newest;
 
-        //     Eigen::Matrix<double, 6, 1> sample_diff = t_diff_ratio * pose_6axis;
-        //     SixVector2Eigen(diff_tf, sample_diff(0,0), sample_diff(1,0), sample_diff(2,0),
-        //                              sample_diff(3,0), sample_diff(4,0), sample_diff(5,0));
+            // double roll = M_PI/atan2(diff_tf(2,1),diff_tf(2,2));
+            // double pitch = M_PI/atan2(-diff_tf(2,0), std::pow( diff_tf(2,1)*diff_tf(2,1) +diff_tf(2,2)*diff_tf(2,2) ,0.5));
+            // double yaw = M_PI/atan2( diff_tf(1,0),diff_tf(0,0));
+            // Eigen::Matrix<double, 6, 1> pose_6axis;
+            // pose_6axis << diff_tf(0,3), diff_tf(1,3), diff_tf(2,3), roll, pitch, yaw;
 
-        //     tf_matrix = tf_matrix_oldest*diff_tf;
-        //     return true;
-        // }
+            // Eigen::Matrix<double, 6, 1> sample_diff = t_diff_ratio * pose_6axis;
+            // SixVector2Eigen(diff_tf, sample_diff(0,0), sample_diff(1,0), sample_diff(2,0),
+            //                          sample_diff(3,0), sample_diff(4,0), sample_diff(5,0));
+
+            // tf_matrix = tf_matrix_oldest*diff_tf;
+            return true;
+        }
         return false;
     }
 

@@ -28,8 +28,9 @@
   <depend>eigen_conversions</depend>
   <depend>vdbfusion_mapping_msgs</depend>
   <depend>vdbfusion</depend>
+  <depend>minkindr</depend>
 
   <export>
   </export>
-  
+
 </package>

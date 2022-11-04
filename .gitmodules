@@ -1,6 +1,9 @@
 [submodule "catkin_simple"]
-	path = catkin_simple
+	path = 3dparty/catkin_simple
 	url = https://gitee.com/kin_zhang/catkin_simple.git
 [submodule "vdbfusion_mapping/cmake/libigl"]
 	path = vdbfusion_mapping/cmake/libigl
 	url = https://gitee.com/kin_zhang/libigl.git
+[submodule "minkindr"]
+	path = 3dparty/minkindr
+	url = https://gitee.com/kin_zhang/minkindr.git
