@@ -2,6 +2,9 @@ VDBFUSION_ROS_MAPPING
 ---
 This repo is **<u>modified version of vdbfusion</u>** for mapping incrementally based on received odometry and corresponding point cloud message. The whole process is based on the ROS1, please check [origin repo of vdbfusion](https://github.com/PRBonn/vdbfusion) if you'd like to use directly.
 
+```bash
+git clone --recurse-submodules https://gitee.com/kin_zhang/vdbfusion_mapping.git
+```
 ## Install
 
 Own environment, please check [the file here](assets/readme/install_desktop.md), TESTED SYSTEM: Ubuntu 18.04 and Ubuntu 20.04
