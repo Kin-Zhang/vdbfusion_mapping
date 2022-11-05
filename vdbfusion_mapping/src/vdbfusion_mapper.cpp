@@ -1,3 +1,10 @@
+/**
+ * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * Author: Kin ZHANG (https://kin-zhang.github.io/)
+ * Date: 2022-11-05
+ * Description: main cpp for vdbfusion_mapping, process using the thread
+ */
+
 #include <iostream>
 #include <ros/ros.h>
 
@@ -35,7 +42,7 @@ void VDBFusionMapper::mapIntegrateProcess(){
     if (data_buf.empty()) {
       std::chrono::seconds dura(5);
       m_data.unlock();
-      LOG(INFO) << "There is no data now, finished all data";
+      LOG(INFO) << "There is no data now, finished all data. After saving the result, you can kill then";
       std::this_thread::sleep_for(dura);
       continue;
     }

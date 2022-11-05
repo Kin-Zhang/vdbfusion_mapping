@@ -1,3 +1,11 @@
+/**
+ * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * Author: Kin ZHANG (https://kin-zhang.github.io/)
+ * Date: 2022-11-05
+ * Description: callback on the transformer, save the pose according to the pt time
+ * Reference: mainly from the voxblox with slightly modification.
+ */
+
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <tf_conversions/tf_eigen.h>
@@ -56,6 +64,11 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
     // [0:tf_tree, 1:tf_topic, 2:odom_topic]
     if(pose_source_ == 0){
         tf::StampedTransform T_G_C;
+        // Previous behavior was just to use the latest transform if the time is in
+        // the future. Now we will just wait.
+        if (!tf_listener_.canTransform(input->header.frame_id, world_frame_, timestamp)) {
+            return false;
+        }
         try {
             tf_listener_.lookupTransform(input->header.frame_id, world_frame_, timestamp, T_G_C);
         }
@@ -67,12 +80,8 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
         // TODO fix it! ===> cannot find the problem now
         tf::Vector3 trans = T_G_C.getOrigin();
         tf::Quaternion rota = T_G_C.getRotation();
-        kindrQuatT res(kindrRotaT(rota.getW(), rota.getX(),rota.getY(), rota.getZ()), 
-                       Eigen::Matrix<double, 3, 1>(trans.getX(),trans.getY(),trans.getZ()));
-        res = res * static_tf.inverse();
-        kindrT2Eigen(tf_matrix, res);
-        // transform2Eigen(tf_matrix, trans.getX(), trans.getY(), trans.getZ(),
-        //                 rota.getW(), rota.getX(),rota.getY(), rota.getZ());
+        transform2Eigen(tf_matrix, trans.getX(), trans.getY(), trans.getZ(),
+                        rota.getW(), rota.getX(),rota.getY(), rota.getZ());
         return true;
     }
     else{

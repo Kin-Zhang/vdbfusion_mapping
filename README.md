@@ -3,7 +3,10 @@ VDBFUSION_ROS_MAPPING
 This repo is **<u>modified version of vdbfusion</u>** for mapping incrementally based on received odometry and corresponding point cloud message. The whole process is based on the ROS1, please check [origin repo of vdbfusion](https://github.com/PRBonn/vdbfusion) if you'd like to use directly.
 
 ```bash
+# 内地的同学用gitee 快一点
 git clone --recurse-submodules https://gitee.com/kin_zhang/vdbfusion_mapping.git
+# OR from github
+git clone --recurse-submodules https://github.com/Kin-Zhang/vdbfusion_mapping.git
 ```
 ## Install
 
@@ -43,7 +46,11 @@ The only thing you have to change is the config file about the topic name on you
 # input topic name setting ===========> Please change according to your dataset
 lidar_topic: "/odom_lidar"
 odom_topic: "/auto_odom"
+
+# or tf topic ==> like the cow and lady dataset
 ```
+
+If you don't have the odom topic but only lidar, please check this repo to get one: [https://github.com/Kin-Zhang/simple_ndt_slam](https://github.com/Kin-Zhang/simple_ndt_slam), Really easy to get poses!! (But it didn't work well on depth sensor point cloud like cow dataset)
 
 ### Run
 
@@ -59,6 +66,15 @@ rosservice call /save_map '/workspace/data/test' 0.0
 ```
 
 ![](assets/readme/save_mesh_pcd.png)
+
+
+
+![](assets/readme/cow_dataset.png)
+
+Meshlab view:
+
+![](assets/readme/example_cow.png)
+
 ## Acknowledgement
 
 - [PRBonn/vdbfusion](https://github.com/PRBonn/vdbfusion)

@@ -1,3 +1,11 @@
+/**
+ * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * Author: Kin ZHANG (https://kin-zhang.github.io/)
+ * Date: 2022-11-05
+ * Description: callback on the transformer, save the pose according to the pt time
+ * Reference: mainly from the voxblox with slightly modification.
+ */
+
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
 
