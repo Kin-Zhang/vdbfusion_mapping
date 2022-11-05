@@ -56,8 +56,8 @@ RUN git config --global user.email "kin_eng@163.com"
 RUN git config --global user.name "kin-docker"
 
 RUN mkdir -p /workspace/vdbfusion_mapping_ws /workspace/data
-RUN git clone --recurse-submodules https://Kin_Zhang@bitbucket.org/kin_zhang/vdbfusion_mapping.git /workspace/vdbfusion_mapping_ws/src
+WORKDIR /workspace/vdbfusion_mapping_ws
+RUN git clone --recurse-submodules https://gitee.com/kin_zhang/vdbfusion_mapping.git /workspace/vdbfusion_mapping_ws/src
 
 RUN chmod +x /workspace/vdbfusion_mapping_ws/src/assets/scripts/setup_lib.sh
 RUN /workspace/vdbfusion_mapping_ws/src/assets/scripts/setup_lib.sh
-WORKDIR /workspace/vdbfusion_mapping_ws
