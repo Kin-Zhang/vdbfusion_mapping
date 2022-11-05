@@ -105,7 +105,6 @@ void VDBFusionMapper::points_callback(
   m_data.lock();
   data_buf.push(std::make_pair(tf_matrix, points));
   m_data.unlock();
-  // integrate_thread.join();
 }
 
 template <typename PCLPoint>
@@ -116,7 +115,6 @@ void VDBFusionMapper::filterptRange(const typename pcl::PointCloud<PCLPoint>& po
   bool enable_filter = true;
   if(config_.min_scan_range < 0 || config_.max_scan_range < 0)
     enable_filter=false;
-  LOG(INFO) << enable_filter;
 
   for (auto item = pointcloud_pcl.begin(); item != pointcloud_pcl.end(); item++) {
     if(!(std::isfinite(item->x) && std::isfinite(item->y) && std::isfinite(item->z)))
@@ -124,7 +122,6 @@ void VDBFusionMapper::filterptRange(const typename pcl::PointCloud<PCLPoint>& po
     p.x = (double)item->x;
     p.y = (double)item->y;
     p.z = (double)item->z;
-    
     if(enable_filter){
       p_radius = sqrt(pow(p.x, 2.0) + pow(p.y, 2.0));
       if (config_.min_scan_range < p_radius &&

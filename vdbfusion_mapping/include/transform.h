@@ -13,25 +13,36 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 
+#include "kindr/minimal/quat-transformation.h"
+
 #define M_PI 3.14159265
 namespace common {
 
+typedef kindr::minimal::QuatTransformationTemplate<double> kindrQuatT;
+typedef kindr::minimal::RotationQuaternionTemplate<double> kindrRotaT;
+typedef std::pair<ros::Time, std::vector<double>> pairTP;
 inline void transform2Eigen(Eigen::Matrix4d& res, double tx, double ty, double tz, double w, double x, double y, double z){
-    Eigen::Vector3d t(tx, ty, tz);
-    Eigen::Quaterniond q(w, x, y, z);
+  Eigen::Vector3d t(tx, ty, tz);
+  Eigen::Quaterniond q(w, x, y, z);
 
-    res.block<3, 3>(0, 0) = q.toRotationMatrix();
-    res.block<3, 1>(0, 3) = t;
+  res.block<3, 3>(0, 0) = q.toRotationMatrix();
+  res.block<3, 1>(0, 3) = t;
 };
 inline void SixVector2Eigen(Eigen::Matrix4d& res, double tx, double ty, double tz, double roll, double pitch, double yaw){
-    Eigen::Vector3d t(tx, ty, tz);
-    Eigen::Quaterniond q;
-    q = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()) 
-      * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) 
-      * Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
-    res.block<3, 3>(0, 0) = q.toRotationMatrix();
-    res.block<3, 1>(0, 3) = t;
+  Eigen::Vector3d t(tx, ty, tz);
+  Eigen::Quaterniond q;
+  q = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()) 
+    * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) 
+    * Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
+  res.block<3, 3>(0, 0) = q.toRotationMatrix();
+  res.block<3, 1>(0, 3) = t;
 };
+
+inline void kindrT2Eigen(Eigen::Matrix4d& res, kindrQuatT& input){
+  res.block<3, 3>(0, 0) = input.getRotationMatrix();
+  res.block<3, 1>(0, 3) = input.getPosition();
+};
+
 // part of code from voxblox: https://github.com/ethz-asl/voxblox
 // part of reference vdbfusion_ros: https://github.com/PRBonn/vdbfusion_ros
 class Transformer {
@@ -61,8 +72,8 @@ class Transformer {
       ros::Subscriber tf_sub_, odom_sub_;
 
       // save all pose queue
-      std::vector<std::pair<ros::Time, Eigen::Matrix4d>> T_Matrixs;
-
+      std::vector<std::pair<ros::Time, std::vector<double>>> TimeWithPose_queue;
+      kindr::minimal::QuatTransformationTemplate<double> static_tf;
 
       int64_t tolerance_ns_;
       int pose_source_ = -1; // [0:tf_tree, 1:tf_topic, 2:odom_topic]

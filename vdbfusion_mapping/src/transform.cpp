@@ -2,7 +2,6 @@
 #include <glog/logging.h>
 #include <tf_conversions/tf_eigen.h>
 
-#include "kindr/minimal/quat-transformation.h"
 #include "transform.h"
 
 namespace common{
@@ -16,11 +15,27 @@ Transformer::Transformer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_pr
     double tolerance_ms;
     nh_private_.getParam("timestamp_tolerance_ms", tolerance_ms);
     tolerance_ns_ = static_cast<int64_t>(tolerance_ms*1000000); // 1ms = 1000000 ns
+    
+    double tx=0, ty=0, tz=0, x=0, y=0, z=0, w=1; // static
+    nh_private_.getParam("tx", tx);
+    nh_private_.getParam("ty", ty);
+    nh_private_.getParam("tz", tz);
+    nh_private_.getParam("x", x);
+    nh_private_.getParam("y", y);
+    nh_private_.getParam("z", z);
+    nh_private_.getParam("w", w);
 
+    kindrQuatT tmp(kindrRotaT(w,x,y,z), Eigen::Matrix<double, 3, 1>(tx,ty,tz));
+    bool invert_static_tf = false;
+    nh_private_.getParam("invert_static_tf", invert_static_tf);
+    if(invert_static_tf)
+        static_tf = tmp.inverse();
+    else
+        static_tf = tmp;
+    
     // [0:tf_tree, 1:tf_topic, 2:odom_topic]
     if(pose_source_ == -1){
         // ERROR!!!
-        // double tx, ty, tz, x, y, z, w; // static
     }
     else if(pose_source_ == 1){
         std::string tf_topic_;
@@ -51,19 +66,21 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
         }
         auto trans = T_G_C.getOrigin();
         auto rota = T_G_C.getRotation();
-        transform2Eigen(tf_matrix, trans.getX(), trans.getY(), trans.getZ(),
-                        rota.getW(), rota.getX(),rota.getY(), rota.getZ());
+        kindrQuatT res(kindrRotaT(rota.getW(), rota.getX(),rota.getY(), rota.getZ()), 
+                       Eigen::Matrix<double, 3, 1>(trans.getX(),trans.getY(),trans.getZ()));
+        res = res * static_tf.inverse();
+        kindrT2Eigen(tf_matrix, res);
         return true;
     }
     else{
-        if (T_Matrixs.empty()) {
+        if (TimeWithPose_queue.empty()) {
             LOG(WARNING) << "No match found for transform timestamp: "<< timestamp << " as transform queue is empty.";
             return false;
         }
         bool match_found = false;
         int i = 0;
-        std::vector<std::pair<ros::Time, Eigen::Matrix4d>>::iterator it = T_Matrixs.begin();
-        for (; it != T_Matrixs.end(); it++) {
+        std::vector<pairTP>::iterator it = TimeWithPose_queue.begin();
+        for (; it != TimeWithPose_queue.end(); it++) {
             i++;
             if (it->first >= timestamp) {
                 // If the current transform is newer than the requested timestamp, we need
@@ -81,86 +98,62 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
         }
 
         if (match_found) {
-            tf_matrix = it->second;
-            T_Matrixs.erase(T_Matrixs.begin(), it);
-            LOG(INFO) << "Found! id: "<< i << ", Finished copy and erase";
+            std::vector<double> pose = it->second;
+
+            kindrQuatT res(kindrRotaT(pose[3], pose[4],pose[5],pose[6]), 
+                           Eigen::Matrix<double, 3, 1>(pose[0], pose[1], pose[2]));
+                           
+            res = res * static_tf.inverse();
+            kindrT2Eigen(tf_matrix, res);
+            TimeWithPose_queue.erase(TimeWithPose_queue.begin(), it);
             return true;
         }
-        // TODO still have problems ====> TODO find it out 
         else{
             // If we think we have an inexact match, have to check that we're still
             // within bounds and interpolate.
-            if (it == T_Matrixs.begin() || it == T_Matrixs.end()) {
+            if (it == TimeWithPose_queue.begin() || it == TimeWithPose_queue.end()) {
                 ROS_WARN_STREAM_THROTTLE(
                     30, "No match found for transform timestamp: "
                             << timestamp
-                            << " Queue front: " << T_Matrixs.front().first
-                            << " back: " << T_Matrixs.back().first);
+                            << " Queue front: " << TimeWithPose_queue.front().first
+                            << " back: " << TimeWithPose_queue.back().first);
                 return false;
             }
-            Eigen::Matrix4d tf_matrix_newest = it->second;
+            std::vector<double> pose = it->second;
+            kindrQuatT tf_newest(kindrRotaT(pose[3], pose[4],pose[5],pose[6]), 
+                Eigen::Matrix<double, 3, 1>(pose[0], pose[1], pose[2]));
+
             int64_t offset_newest_ns = (it->first - timestamp).toNSec();
             // We already checked that this is not the beginning.
             it--;
-            Eigen::Matrix4d tf_matrix_oldest = it->second;
+            pose = it->second;
+            kindrQuatT tf_oldest(kindrRotaT(pose[3], pose[4],pose[5],pose[6]), 
+                Eigen::Matrix<double, 3, 1>(pose[0], pose[1], pose[2]));
             int64_t offset_oldest_ns = (timestamp - it->first).toNSec();
 
             // Interpolate between the two transformations using the exponential map.
             float t_diff_ratio = static_cast<float>(offset_oldest_ns) / static_cast<float>(offset_newest_ns + offset_oldest_ns);
             
-            Eigen::Matrix<double, 3, 3> tmp;
-            tmp = tf_matrix_newest.block<3, 3>(0, 0);
-            kindr::minimal::RotationQuaternionTemplate<double> rot_new(tmp);
-            Eigen::Matrix<double, 3, 1> pos_new = tf_matrix_newest.block<3, 1>(0, 3);
-            kindr::minimal::QuatTransformationTemplate<double> tf_newest(rot_new, pos_new);
-
-            tmp = tf_matrix_oldest.block<3, 3>(0, 0);
-            kindr::minimal::RotationQuaternionTemplate<double> rot_old(tmp);
-            Eigen::Matrix<double, 3, 1> pos_old = tf_matrix_oldest.block<3, 1>(0, 3);
-            kindr::minimal::QuatTransformationTemplate<double> tf_oldest(rot_old, pos_old);
-
             Eigen::Matrix<double, 6, 1> diff_vector = (tf_oldest.inverse() * tf_newest).log();
             
-            kindr::minimal::QuatTransformationTemplate<double> interpolate_tf;
-            interpolate_tf = tf_oldest * kindr::minimal::QuatTransformationTemplate<double>::exp(t_diff_ratio*diff_vector);
-            
-            tf_matrix.block<3, 3>(0, 0) = interpolate_tf.getRotationMatrix();
-            tf_matrix.block<3, 1>(0, 3) = interpolate_tf.getPosition();
-            // ?????
-            // Eigen::Matrix4d diff_tf = tf_matrix_oldest.inverse() * tf_matrix_newest;
-
-            // double roll = M_PI/atan2(diff_tf(2,1),diff_tf(2,2));
-            // double pitch = M_PI/atan2(-diff_tf(2,0), std::pow( diff_tf(2,1)*diff_tf(2,1) +diff_tf(2,2)*diff_tf(2,2) ,0.5));
-            // double yaw = M_PI/atan2( diff_tf(1,0),diff_tf(0,0));
-            // Eigen::Matrix<double, 6, 1> pose_6axis;
-            // pose_6axis << diff_tf(0,3), diff_tf(1,3), diff_tf(2,3), roll, pitch, yaw;
-
-            // Eigen::Matrix<double, 6, 1> sample_diff = t_diff_ratio * pose_6axis;
-            // SixVector2Eigen(diff_tf, sample_diff(0,0), sample_diff(1,0), sample_diff(2,0),
-            //                          sample_diff(3,0), sample_diff(4,0), sample_diff(5,0));
-
-            // tf_matrix = tf_matrix_oldest*diff_tf;
+            kindrQuatT interpolate_tf = tf_oldest * kindrQuatT::exp(t_diff_ratio*diff_vector) * static_tf.inverse();
+            kindrT2Eigen(tf_matrix, interpolate_tf);
             return true;
         }
-        return false;
     }
 
 }
 void Transformer::tfCallback(const geometry_msgs::TransformStamped& transform_msg) {
     geometry_msgs::Transform tf_msg_ = transform_msg.transform;
-
-    Eigen::Matrix4d tf_matrix = Eigen::Matrix4d::Identity();
-    transform2Eigen(tf_matrix, tf_msg_.translation.x, tf_msg_.translation.y, tf_msg_.translation.z,
-    tf_msg_.rotation.w, tf_msg_.rotation.x,tf_msg_.rotation.y, tf_msg_.rotation.z);
-
-    T_Matrixs.push_back(std::make_pair(transform_msg.header.stamp, tf_matrix));
+    std::vector<double> pose = {tf_msg_.translation.x, tf_msg_.translation.y, tf_msg_.translation.z, 
+                                tf_msg_.rotation.w, tf_msg_.rotation.x,tf_msg_.rotation.y, tf_msg_.rotation.z};
+    TimeWithPose_queue.push_back(std::make_pair(transform_msg.header.stamp, pose));
 }
 void Transformer::odomCallback(const nav_msgs::Odometry::ConstPtr &input) {
 
-    Eigen::Matrix4d tf_matrix = Eigen::Matrix4d::Identity();
-    transform2Eigen(tf_matrix, input->pose.pose.position.x, input->pose.pose.position.y, input->pose.pose.position.z,
-    input->pose.pose.orientation.w, input->pose.pose.orientation.x,
-    input->pose.pose.orientation.y, input->pose.pose.orientation.z);
-    T_Matrixs.push_back(std::make_pair(input->header.stamp, tf_matrix));
+    std::vector<double> pose = {input->pose.pose.position.x, input->pose.pose.position.y, input->pose.pose.position.z,
+                                input->pose.pose.orientation.w, input->pose.pose.orientation.x,
+                                input->pose.pose.orientation.y, input->pose.pose.orientation.z};
+    TimeWithPose_queue.push_back(std::make_pair(input->header.stamp, pose));
 }
 }  

@@ -12,7 +12,12 @@ class WeightFunction {
     inline static float epsilon_ = 0.0f;
 
     inline static auto constant_weight = [](float sdf) { return 1.0f; };
-
+    inline static auto no_constant_weight = [](float sdf) {
+      const float dist_z = std::abs(sdf);
+      if (dist_z > epsilon_) {
+        return 1.0f / (dist_z * dist_z);
+      }
+    };
     inline static auto linear_weight = [](float sdf) {
     static float a = 0.5f * tsdf_ / (tsdf_ - epsilon_);
     static float b = 0.5f         / (tsdf_ - epsilon_);
