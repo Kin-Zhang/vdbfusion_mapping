@@ -32,7 +32,7 @@ Transformer::Transformer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_pr
         static_tf = tmp.inverse();
     else
         static_tf = tmp;
-    
+    LOG(INFO) << "static tf:\n\r" << static_tf << "\n\r -----";
     // [0:tf_tree, 1:tf_topic, 2:odom_topic]
     if(pose_source_ == -1){
         // ERROR!!!
@@ -64,12 +64,15 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
             ROS_ERROR_STREAM(
                 "Error getting TF transform from sensor data: " << ex.what());
         }
-        auto trans = T_G_C.getOrigin();
-        auto rota = T_G_C.getRotation();
+        // TODO fix it! ===> cannot find the problem now
+        tf::Vector3 trans = T_G_C.getOrigin();
+        tf::Quaternion rota = T_G_C.getRotation();
         kindrQuatT res(kindrRotaT(rota.getW(), rota.getX(),rota.getY(), rota.getZ()), 
                        Eigen::Matrix<double, 3, 1>(trans.getX(),trans.getY(),trans.getZ()));
         res = res * static_tf.inverse();
         kindrT2Eigen(tf_matrix, res);
+        // transform2Eigen(tf_matrix, trans.getX(), trans.getY(), trans.getZ(),
+        //                 rota.getW(), rota.getX(),rota.getY(), rota.getZ());
         return true;
     }
     else{
