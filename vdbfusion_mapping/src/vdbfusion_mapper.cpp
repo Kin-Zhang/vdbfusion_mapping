@@ -113,14 +113,25 @@ void VDBFusionMapper::filterptRange(const typename pcl::PointCloud<PCLPoint>& po
                                     pcl::PointCloud<pcl::PointXYZ>& cloud_filter){
   pcl::PointXYZ p;
   double p_radius;
+  bool enable_filter = true;
+  if(config_.min_scan_range < 0 || config_.max_scan_range < 0)
+    enable_filter=false;
+  LOG(INFO) << enable_filter;
+
   for (auto item = pointcloud_pcl.begin(); item != pointcloud_pcl.end(); item++) {
+    if(!(std::isfinite(item->x) && std::isfinite(item->y) && std::isfinite(item->z)))
+      continue;
     p.x = (double)item->x;
     p.y = (double)item->y;
     p.z = (double)item->z;
-
-    p_radius = sqrt(pow(p.x, 2.0) + pow(p.y, 2.0));
-    if (config_.min_scan_range < p_radius &&
-        p_radius < config_.max_scan_range && p.z < config_.max_height)
+    
+    if(enable_filter){
+      p_radius = sqrt(pow(p.x, 2.0) + pow(p.y, 2.0));
+      if (config_.min_scan_range < p_radius &&
+          p_radius < config_.max_scan_range && p.z < config_.max_height)
+        cloud_filter.push_back(p);
+    }
+    else
       cloud_filter.push_back(p);
   }
 }
