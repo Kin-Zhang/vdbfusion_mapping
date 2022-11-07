@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>vdbfusion</name>
-  <version>0.0.0</version>
+  <version>1.0.0</version>
   <description>ROS wrappper for the vdbfusion library</description>
 
-  <maintainer email="saurabh.gupta1002@gmail.com">Saurabh Gupta</maintainer>
+  <maintainer email="kin_eng@163.com">Kin ZHANG</maintainer>
   <author email="saurabh.gupta1002@gmail.com">Saurabh Gupta</author>
 
   <license>MIT</license>

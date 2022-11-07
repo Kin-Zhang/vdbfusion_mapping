@@ -1,3 +1,25 @@
+// MIT License
+//
+// # Copyright (c) 2022 Saurabh Gupta, Ignacio Vizzo, Cyrill Stachniss, University of Bonn
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include "VDBVolume.h"
 
 // OpenVDB
@@ -136,73 +158,6 @@ void VDBVolume::Integrate(
       }
     } while (dda.step());
   });
-}
-
-void VDBVolume::Integrate_HDDA(
-    const std::vector<Eigen::Vector3d> &points, const Eigen::Vector3d &origin,
-    const std::function<float(float)> &weighting_function){
-  if (points.empty()) {
-    std::cerr << "PointCloud provided is empty\n";
-    return;
-  }
-
-  // Get some variables that are common to all rays
-  const openvdb::math::Transform &xform = tsdf_->transform();
-  const openvdb::Vec3R eye(origin.x(), origin.y(), origin.z());
-
-  // Get the "unsafe" version of the grid acessors
-  auto tsdf_acc = tsdf_->getUnsafeAccessor();
-  auto weights_acc = weights_->getUnsafeAccessor();
-
-  // Launch an for_each execution, use std::execution::par to parallelize this
-  // region
-  std::for_each(points.cbegin(), points.cend(), [&](const auto &point) {
-    // Get the direction from the sensor origin to the point and normalize it
-    const Eigen::Vector3d direction = point - origin;
-    openvdb::Vec3R dir(direction.x(), direction.y(), direction.z());
-    dir.normalize();
-
-    // Truncate the Ray before and after the source unless space_carving_ is
-    // specified.
-    const auto depth = static_cast<float>(direction.norm());
-    const float t0 = space_carving_ ? 0.0f : depth - sdf_trunc_;
-    const float t1 = depth + sdf_trunc_;
-
-
-    openvdb::math::Ray<float> ray, ray_sup;// one for dda, one for hdda
-    ray = openvdb::math::Ray<float>(eye, dir, t0, t1).worldToIndex(*tsdf_);
-    ray_sup = openvdb::math::Ray<float>(eye, dir, t0, t1).worldToIndex(*tsdf_);
-    if(!tsdf_->empty()){
-      // Creating the HDDA for speed up, the ray must operate on voxel grid coordinates.
-      // with times
-      openvdb::math::VolumeHDDA<openvdb::FloatGrid::TreeType, decltype(ray), 0> volume_hdda;
-      std::vector<openvdb::math::Ray<float>::TimeSpan> times;
-      volume_hdda.hits(ray, tsdf_acc, times);
-
-      for(const auto &t: times){
-        ray_sup.setTimes(t.t0, t.t1);
-        openvdb::math::DDA<decltype(ray_sup)> dda(ray_sup);
-        do {
-          const auto voxel = dda.voxel();
-          const auto voxel_center = GetVoxelCenter(voxel, xform);
-          const auto sdf = ComputeSDF(origin, point, voxel_center);
-          if (sdf > -sdf_trunc_) {
-            const float tsdf = std::min(sdf_trunc_, sdf);
-            const float weight = weighting_function(sdf);
-            const float last_weight = weights_acc.getValue(voxel);
-            const float last_tsdf = tsdf_acc.getValue(voxel);
-            const float new_weight = weight + last_weight;
-            const float new_tsdf = (last_tsdf * last_weight + tsdf * weight) / (new_weight);
-            tsdf_acc.setValue(voxel, new_tsdf);
-            weights_acc.setValue(voxel, new_weight);
-          }
-        } while (dda.step());
-      }
-    }
-    else
-      Integrate(points, origin, weighting_function);
-  });
-
 }
 
 openvdb::FloatGrid::Ptr VDBVolume::Prune(float min_weight) const {

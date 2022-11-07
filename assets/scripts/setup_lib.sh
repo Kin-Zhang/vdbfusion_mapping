@@ -13,7 +13,7 @@ cd /workspace/lib
 git clone https://github.com/gflags/gflags.git
 cd gflags
 mkdir build && cd build
-cmake .. && make -j$(nproc)
+cmake .. -DBUILD_SHARED_LIBS=ON && make
 make install
 
 # cd /workspace/lib

@@ -1,3 +1,9 @@
+/**
+ * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * MIT License
+ * Author: Kin ZHANG (https://kin-zhang.github.io/)
+ * Date: 2022-11-05
+ */
 #ifndef VDBFUSIOON_MAPPER_H
 #define VDBFUSIOON_MAPPER_H
 

@@ -1,3 +1,11 @@
+/**
+ * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * MIT License
+ * Author: Jianhao JIAO (https://gogojjh.github.io/)
+ * Date: 2022-09-14
+ * Description: test on dda and hdda speed
+ * Reference: OPENVDB and vdbfusion_ros
+ */
 #include <iostream>
 #include <string>
 #include <cmath>

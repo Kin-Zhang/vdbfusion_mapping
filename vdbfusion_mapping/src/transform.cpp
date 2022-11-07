@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * MIT License
  * Author: Kin ZHANG (https://kin-zhang.github.io/)
  * Date: 2022-11-05
  * Description: callback on the transformer, save the pose according to the pt time
@@ -90,10 +91,9 @@ bool Transformer::lookUpTransformfromSource(const sensor_msgs::PointCloud2::Cons
             return false;
         }
         bool match_found = false;
-        int i = 0;
+        int id = 0;
         std::vector<pairTP>::iterator it = TimeWithPose_queue.begin();
-        for (; it != TimeWithPose_queue.end(); it++) {
-            i++;
+        for (; it != TimeWithPose_queue.end(); it++, id++) {
             if (it->first >= timestamp) {
                 // If the current transform is newer than the requested timestamp, we need
                 // to break.

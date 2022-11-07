@@ -1,3 +1,10 @@
+/**
+ * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * MIT License
+ * Author: Kin ZHANG (https://kin-zhang.github.io/)
+ * Date: 2022-11-05
+ * Reference: vdbfusion_ros: https://github.com/PRBonn/vdbfusion_ros and voxblox https://github.com/ethz-asl/voxblox
+ */
 #ifndef UTILS_H
 #define UTILS_H
 

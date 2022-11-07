@@ -77,9 +77,13 @@ Meshlab view:
 
 ## Acknowledgement
 
+- [ethz-asl/voxblox](https://github.com/ethz-asl/voxblox)
+
 - [PRBonn/vdbfusion](https://github.com/PRBonn/vdbfusion)
 
 - [PRBonn/vdbfusion_ros](https://github.com/PRBonn/vdbfusion_ros)
+
+- [jianhao jiao](https://github.com/gogojjh): for the first version on vdbfusion mapping ros
 
 - Style Formate: [https://github.com/ethz-asl/linter](https://github.com/ethz-asl/linter)
 
@@ -90,8 +94,6 @@ Meshlab view:
   
   init_linter_git_hooks --remove # remove
   ```
-
-- [jianhao jiao](https://github.com/gogojjh): for the first version on vdbfusion mapping ros
 
 ## Others
 

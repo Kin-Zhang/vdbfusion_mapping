@@ -1,5 +1,6 @@
 /**
  * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
+ * MIT License
  * Author: Kin ZHANG (https://kin-zhang.github.io/)
  * Date: 2022-11-05
  * Description: main cpp for vdbfusion_mapping, process using the thread
