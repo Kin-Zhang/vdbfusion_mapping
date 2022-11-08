@@ -10,6 +10,9 @@
 
 #include <cmath>
 #include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <openvdb/openvdb.h>
+
 namespace common {
 
 // clang-format off
@@ -42,6 +45,25 @@ class WeightFunction {
     };
 };
 // clang-format on
+
+template <typename PCLPoint>
+openvdb::Vec3i convertColor(const PCLPoint& point);
+
+template <>
+inline openvdb::Vec3i convertColor(const pcl::PointXYZRGB& point) {
+  // std::cout << "r,g,b: "<< static_cast<int>(point.r) << static_cast<int>(point.g) << static_cast<int>(point.b) <<std::endl;
+  return openvdb::Vec3i(static_cast<int>(point.r), static_cast<int>(point.g), static_cast<int>(point.b));
+}
+
+template <>
+inline openvdb::Vec3i convertColor(const pcl::PointXYZI& point) {
+  return openvdb::Vec3i(0, 0, 0);
+}
+
+template <>
+inline openvdb::Vec3i convertColor(const pcl::PointXYZ& /*point*/) {
+  return openvdb::Vec3i(0, 0, 0);
+}
 
 // Check if all coordinates in the PCL point are finite.
 template <typename PointType>

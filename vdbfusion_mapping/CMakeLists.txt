@@ -10,7 +10,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -fPIC")
 # NOTE: CHOOSE THE O2/O3 is really important for speed! check more on optimization on compile
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
@@ -21,6 +21,10 @@ list(APPEND CMAKE_MODULE_PATH "/usr/local/lib/cmake/OpenVDB")
 find_package(OpenVDB REQUIRED)
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# Find installed Open3D, which exports Open3D::Open3D
+list(APPEND CMAKE_MODULE_PATH "/usr/local/lib/cmake/open3d")
+find_package(Open3D REQUIRED)
+include_directories("/usr/local/include/open3d/3rdparty")
 # Libigl
 include(libigl)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/cmake/libigl/include")
@@ -46,6 +50,7 @@ target_link_libraries(vdbfusion_mapping ${PROJECT_NAME}
         glog::glog
         igl::core
         OpenVDB::openvdb
+        Open3D::Open3D
         )
 
         

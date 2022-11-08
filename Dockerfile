@@ -47,6 +47,14 @@ RUN git clone --depth 1 https://github.com/nachovizzo/openvdb.git -b nacho/vdbfu
     && cd / \
     && rm -rf /openvdb
 
+# Install Open3D dependencies
+RUN git clone --depth 1 --branch v0.16.0 https://gitcode.net/mirrors/isl-org/Open3D.git && cd Open3D \
+    && util/install_deps_ubuntu.sh && mkdir build && cd build && cmake .. \
+    && make -j$(nproc) \
+    && make -j$(nproc) all install \
+    && cd / \
+    && rm -rf /Open3D
+
 # kin self vdbfusion_mapping
 RUN echo "source /opt/ros/noetic/setup.zsh" >> ~/.zshrc
 RUN echo "source /opt/ros/noetic/setup.bashrc" >> ~/.bashrc

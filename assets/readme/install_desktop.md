@@ -6,7 +6,7 @@ sudo chmod +x ./assets/scripts/setup_lib.sh
 ./assets/scripts/setup_lib.sh
 ```
 
-Then just install the OpenVDB is enough
+Then just install the OpenVDB is enough, but if you want to save the rgb mesh or visualize real-time, Open3D is needed
 
 # OpenVDB
 
@@ -59,4 +59,23 @@ after install boost 1.70.0, it still miss need one more action to link together:
 
 ```bash
 sudo ln -s /usr/local/boost_1_70_0/lib/libboost_iostreams.so.1.70.0 /usr/local/lib/libboost_iostreams.so.1.70.0
+```
+
+# Open3D
+mainly for save the rgb mesh and visualize real-time, if you don't want to install, please just comment the code related to this one, for save mesh, you can uncomment the igl
+build from source
+```bash
+git clone --depth 1 --branch v0.16.0 https://gitcode.net/mirrors/isl-org/Open3D.git && cd Open3D \
+    && util/install_deps_ubuntu.sh && mkdir build && cd build && cmake .. \
+    && make -j$(nproc) \
+    && make -j$(nproc) all install \
+    && cd / \
+    && rm -rf /Open3D
+```
+
+or use the binary lib but need to cp/ln the lib, there are four steps after download here: [https://github.com/isl-org/Open3D/releases](https://github.com/isl-org/Open3D/releases)
+```bash
+sudo cp -r ~/Desktop/Open3D/include/open3d /usr/local/include
+sudo cp -r ~/Desktop/Open3D/lib/cmake/Open3D /usr/local/lib/cmake
+sudo cp -r ~/Desktop/Open3D/libOpen3D.so /usr/local/lib
 ```

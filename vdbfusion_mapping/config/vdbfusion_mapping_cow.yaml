@@ -23,7 +23,7 @@ sdf_trunc: 0.06
 sdf_voxel_size: 0.02
 
 # min weight setting TODO add details description
-sdf_min_weight: 0.5
+sdf_min_weight: 0.1
 sdf_deactivate: 0.05
 
 # Static Transform

@@ -1,6 +1,6 @@
 VDBFUSION_ROS_MAPPING
 ---
-This repo is **<u>modified version of vdbfusion</u>** for mapping incrementally based on received odometry and corresponding point cloud message. The whole process is based on the ROS1, please check [origin repo of vdbfusion](https://github.com/PRBonn/vdbfusion) if you'd like to use directly.
+This repo is **<u>modified ROS1 version of vdbfusion</u>** for mapping incrementally based on received odometry and corresponding point cloud message. Since the [origin repo of vdbfusion_ros](https://github.com/PRBonn/vdbfusion_ros) have some problems on the cow dataset, more issues can be found [here](https://github.com/PRBonn/vdbfusion_ros/issues/2). The whole process is based on the ROS1, please check [origin repo of vdbfusion](https://github.com/PRBonn/vdbfusion) if you'd like to use directly without ROS. Please remember clone submodules also.
 
 ```bash
 # 内地的同学用gitee 快一点
@@ -10,8 +10,6 @@ git clone --recurse-submodules https://github.com/Kin-Zhang/vdbfusion_mapping.gi
 ```
 ## Install
 
-Own environment, please check [the file here](assets/readme/install_desktop.md), TESTED SYSTEM: Ubuntu 18.04 and Ubuntu 20.04
-
 Docker version for convenient  usage. [在内地的同学建议使用docker pull 先换一下dockerhub的源]
 
 ```bash
@@ -20,13 +18,13 @@ docker pull zhangkin/vdbmapping_mapping
 # or build through Dockerfile
 docker build -t zhangkin/vdbfusion_mapping .
 
-# =========== RUN
+# =========== RUN -v is the bag path in your computer
 docker run -it --net=host -v /dev/shm:/dev/shm -v /home/kin/bags:/workspace/data --name vdbfusion_mapping zhangkin/vdbfusion_mapping /bin/zsh
 ```
 
 ### Dependencies
 
-Here is some dependencies for desktop installed if you'd like to try. Please follow their dependencies to install, [Dockerfile](Dockerfile) may help you with that.
+Own environment, please check [the file here](assets/readme/install_desktop.md), TESTED SYSTEM: Ubuntu 18.04 and Ubuntu 20.04. Here are some dependencies for desktop installed if you'd like to try. Please follow their dependencies to install, [Dockerfile](Dockerfile) may help you with that also.
 
 - [IGL](https://github.com/libigl/libigl): mesh save
 - [OpenVDB](https://github.com/nachovizzo/openvdb.git): vdb data structure, ATTENTION Boost need 1.70, Ubuntu 18.04 default is 1.65
@@ -35,7 +33,7 @@ Here is some dependencies for desktop installed if you'd like to try. Please fol
 
 ## Usage
 
-Please note that this is the for incremental mapping, **no! odom output!** So, you have to **have odom/tf topic with same timestamp** lidar msg. If you don't have the package to do so, checkout here: [Kin-Zhang/simple_ndt_slam](https://github.com/Kin-Zhang/simple_ndt_slam)
+Please note that this is the for incremental mapping, **no! odom output!** So, you have to **have odom/tf topic with same timestamp** lidar msg. If you don't have the package to do so, checkout here: [Kin-Zhang/simple_ndt_slam](https://github.com/Kin-Zhang/simple_ndt_slam) Really easy to get poses!! (But it didn't work well on depth sensor point cloud like cow dataset)
 
 
 ### Config
@@ -49,8 +47,6 @@ odom_topic: "/auto_odom"
 
 # or tf topic ==> like the cow and lady dataset
 ```
-
-If you don't have the odom topic but only lidar, please check this repo to get one: [https://github.com/Kin-Zhang/simple_ndt_slam](https://github.com/Kin-Zhang/simple_ndt_slam), Really easy to get poses!! (But it didn't work well on depth sensor point cloud like cow dataset)
 
 ### Run
 
@@ -71,9 +67,11 @@ rosservice call /save_map '/workspace/data/test' 0.0
 
 ![](assets/readme/cow_dataset.png)
 
-Meshlab view:
+Meshlab view, If the bag have the RGB info in the msg like XYZRGB etc, the results could be like right one:
 
 ![](assets/readme/example_cow.png)
+
+
 
 ## Acknowledgement
 
@@ -84,6 +82,8 @@ Meshlab view:
 - [PRBonn/vdbfusion_ros](https://github.com/PRBonn/vdbfusion_ros)
 
 - [jianhao jiao](https://github.com/gogojjh): for the first version on vdbfusion mapping ros
+
+- [paucarre](https://github.com/paucarre): for the rgb version on vdbfusion
 
 - Style Formate: [https://github.com/ethz-asl/linter](https://github.com/ethz-asl/linter)
 

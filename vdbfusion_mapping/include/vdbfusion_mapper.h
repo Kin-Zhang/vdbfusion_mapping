@@ -59,7 +59,7 @@ public:
   virtual ~VDBFusionMapper() = default;
 
   // ROS callbacks.
-  void points_callback(const sensor_msgs::PointCloud2::ConstPtr &input);
+  void points_callback(const sensor_msgs::PointCloud2::Ptr &input);
   void odom_callback(const nav_msgs::Odometry::ConstPtr &input);
   bool saveMap_callback(vdbfusion_mapping_msgs::SaveMap::Request &req,
                         vdbfusion_mapping_msgs::SaveMap::Response &res);
@@ -72,11 +72,14 @@ public:
 
   template <typename PCLPoint>
   void filterptRange(const typename pcl::PointCloud<PCLPoint>& pointcloud_pcl, 
-                                    pcl::PointCloud<pcl::PointXYZ>& cloud_filter);
+                                    pcl::PointCloud<pcl::PointXYZ>& cloud_filter,
+                                    std::vector<openvdb::Vec3i>& color);
+
   // IO.
   const Config &getConfig() const { return config_; }
 
 private:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   // variables
   Config config_;
   vdbfusion::VDBVolume tsdf_volume, tsdf_volume_hdda;
@@ -91,11 +94,16 @@ private:
   ros::ServiceServer save_map_srv;
 
   std::mutex m_fullmap, m_data;
-  std::queue<std::pair<Eigen::Matrix4d, std::vector<Eigen::Vector3d>>> data_buf;
+
+  std::queue<std::tuple<Eigen::Matrix4d, 
+                       std::vector<Eigen::Vector3d>,
+                       std::vector<openvdb::Vec3i>>> data_buf;
+  
   std::thread integrate_thread;
 
   std::string _lidar_topic = "/odom_lidar";
   bool _debug_print = true;
+  bool color_pointcloud = false;
   int enqueue = 0, dequeue = 0;
 };
 } // namespace vdbfusion_mapping

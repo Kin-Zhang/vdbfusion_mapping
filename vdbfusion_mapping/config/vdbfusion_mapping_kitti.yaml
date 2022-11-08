@@ -23,3 +23,13 @@ sdf_voxel_size: 0.1
 # min weight setting TODO add details description
 sdf_min_weight: 0.5
 sdf_deactivate: 0.05
+
+# Translation
+tx: 0
+ty: 0
+tz: 0
+# Rotation Quaternion
+x: 0
+y: 0
+z: 0
+w: 1
