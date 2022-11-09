@@ -22,21 +22,21 @@
 namespace common {
 
 class Timer {
-public:
+ public:
   Timer() { Start(); };
   Timer(const double timeout) : timeout_(timeout) {}
 
   inline void Start();
   inline void Reset();
-  inline double End();          // in millseconds
-  inline double EndThenReset(); // in millseconds
+  inline double End();           // in millseconds
+  inline double EndThenReset();  // in millseconds
   inline void End(const std::string &description, const bool ifPrint);
 
   inline void set_timeout(const double timeout_ms) { timeout_ = timeout_ms; }
   inline bool timeout() { return End() > timeout_; }
 
-private:
-  double timeout_ = 0.0; // ms
+ private:
+  double timeout_ = 0.0;  // ms
   std::chrono::time_point<std::chrono::system_clock> start_time_;
 };
 
@@ -71,4 +71,4 @@ inline void Timer::End(const std::string &description, const bool ifPrint) {
 #define TIC ::common::Timer timer
 #define TRE timer.Reset();
 #define TOC(description, ifPrint) timer.End(description, ifPrint);
-} // namespace common
+}  // namespace common

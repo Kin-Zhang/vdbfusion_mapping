@@ -2,16 +2,18 @@
  * Copyright (C) 2022, IADC, Hong Kong University of Science and Technology
  * MIT License
  * Author: Kin ZHANG (https://kin-zhang.github.io/)
+ *        Jiaojian HAO (https://gogojjh.github.io/)
  * Date: 2022-11-05
- * Reference: vdbfusion_ros: https://github.com/PRBonn/vdbfusion_ros and voxblox https://github.com/ethz-asl/voxblox
+ * Reference: vdbfusion_ros: https://github.com/PRBonn/vdbfusion_ros and voxblox
+ * https://github.com/ethz-asl/voxblox
  */
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <cmath>
+#include <openvdb/openvdb.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <openvdb/openvdb.h>
+#include <cmath>
 
 namespace common {
 
@@ -51,8 +53,10 @@ openvdb::Vec3i convertColor(const PCLPoint& point);
 
 template <>
 inline openvdb::Vec3i convertColor(const pcl::PointXYZRGB& point) {
-  // std::cout << "r,g,b: "<< static_cast<int>(point.r) << static_cast<int>(point.g) << static_cast<int>(point.b) <<std::endl;
-  return openvdb::Vec3i(static_cast<int>(point.r), static_cast<int>(point.g), static_cast<int>(point.b));
+  // std::cout << "r,g,b: "<< static_cast<int>(point.r) <<
+  // static_cast<int>(point.g) << static_cast<int>(point.b) <<std::endl;
+  return openvdb::Vec3i(static_cast<int>(point.r), static_cast<int>(point.g),
+                        static_cast<int>(point.b));
 }
 
 template <>
@@ -67,19 +71,18 @@ inline openvdb::Vec3i convertColor(const pcl::PointXYZ& /*point*/) {
 
 // Check if all coordinates in the PCL point are finite.
 template <typename PointType>
-inline bool isPointFinite(const PointType &point) {
+inline bool isPointFinite(const PointType& point) {
   return std::isfinite(point.x) && std::isfinite(point.y) &&
          std::isfinite(point.z);
 }
 
 template <typename Scalar, typename PointType>
-inline void PCL2Eigen(const pcl::PointCloud<PointType> &ptcloud_pcl,
-               std::vector<Eigen::Matrix<Scalar, 3, 1>> &ptcloud_eig) {
+inline void PCL2Eigen(const pcl::PointCloud<PointType>& ptcloud_pcl,
+                      std::vector<Eigen::Matrix<Scalar, 3, 1>>& ptcloud_eig) {
   ptcloud_eig.clear();
   ptcloud_eig.reserve(ptcloud_pcl.size());
   for (const auto point : ptcloud_pcl) {
-    if (!isPointFinite(point))
-      continue;
+    if (!isPointFinite(point)) continue;
     Eigen::Matrix<Scalar, 3, 1> pt;
     pt(0) = static_cast<Scalar>(point.x);
     pt(1) = static_cast<Scalar>(point.y);
@@ -113,6 +116,6 @@ class ThreadSafeIndex {
   const size_t number_of_points_;
 };
 
-} // namespace common
+}  // namespace common
 
-#endif // UTILS_H
+#endif  // UTILS_H

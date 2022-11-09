@@ -97,13 +97,16 @@ Meshlab view, If the bag have the RGB info in the msg like XYZRGB etc, the resul
 
 ## Others
 
-Using HDDA can speed up the searching and updating for voxel ray through, but in the real mapping we didn't find a lots of improvements on time.
+includes some todo and issue
 
-```bash
-[DDA searching active voxel] takes 630.797364 ms
-number of active voxels (repeated counted): 2440188
-[HDDA searching active voxel: ] takes 305.694895 ms
-number of active voxels (repeated counted): 2440154
-```
+- [ ] grouped process TODO from voxblox
+- [ ] Memory increases a lot, maybe buffer and thread is not so great option, throw some data away if the queue is too long?
+- [ ] speedup again?? GPU? I don't know, let's find out
 
-grouped process TODO from voxblox
+---
+
+Solved:
+
+- For HDDA, here are comments from vdbfusion author [@nachovizzo](https://github.com/nachovizzo):
+
+  > Additionally, the HDDA makes not much sense in our mapping context since it's highly effective ONCE the VDB topology has been already created

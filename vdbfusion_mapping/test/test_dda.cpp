@@ -6,16 +6,16 @@
  * Description: test on dda and hdda speed
  * Reference: OPENVDB and vdbfusion_ros
  */
+#include <cmath>
 #include <iostream>
 #include <string>
-#include <cmath>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
 #include <openvdb/Types.h>
 #include <openvdb/math/DDA.h>
 #include <openvdb/math/Ray.h>
 #include <openvdb/openvdb.h>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #include "timer.h"
 
@@ -60,7 +60,7 @@ void generateSpherePoint(std::vector<Eigen::Vector3d> &points) {
   }
 }
 
-int main(int argc, char *argv[]) { 
+int main(int argc, char *argv[]) {
   TIC;
   openvdb::initialize();
 
@@ -158,7 +158,8 @@ int main(int argc, char *argv[]) {
       } while (dda.step());
     });
     TOC("DDA searching active voxel", true);
-    std::cout << "number of active voxels (repeated counted): " << cnt << std::endl;
+    std::cout << "number of active voxels (repeated counted): " << cnt
+              << std::endl;
   }
 
   {
@@ -182,7 +183,7 @@ int main(int argc, char *argv[]) {
           openvdb::math::Ray<float>(eye, dir, t0, t1).worldToIndex(*tsdf);
       openvdb::math::Ray<float> ray_sub =
           openvdb::math::Ray<float>(eye, dir, t0, t1).worldToIndex(*tsdf);
-      
+
       openvdb::math::VolumeHDDA<openvdb::FloatGrid::TreeType, decltype(ray), 0>
           volume_hdda;
       std::vector<openvdb::math::Ray<float>::TimeSpan> times;
@@ -199,7 +200,8 @@ int main(int argc, char *argv[]) {
       }
     });
     TOC("HDDA searching active voxel: ", true);
-    std::cout << "number of active voxels (repeated counted): " << cnt << std::endl;
+    std::cout << "number of active voxels (repeated counted): " << cnt
+              << std::endl;
   }
 
   // {

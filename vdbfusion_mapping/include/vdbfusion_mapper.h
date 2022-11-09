@@ -27,7 +27,6 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
-
 #include "MarchingCubesConst.h"
 #include "VDBVolume.h"
 #include "transform.h"
@@ -37,7 +36,7 @@
 
 namespace vdbfusion_mapping {
 class VDBFusionMapper {
-public:
+ public:
   typedef tf::StampedTransform Transformation;
   struct Config {
     int ros_spinner_threads = std::thread::hardware_concurrency();
@@ -67,24 +66,26 @@ public:
   // function
   void setConfig();
   void mapIntegrateProcess();
-  
-  void processPointCloudMessage(const sensor_msgs::PointCloud2::ConstPtr& pointcloud_msg, const Eigen::Matrix4d& tf_matrix);
+
+  void processPointCloudMessage(
+      const sensor_msgs::PointCloud2::ConstPtr &pointcloud_msg,
+      const Eigen::Matrix4d &tf_matrix);
 
   template <typename PCLPoint>
-  void filterptRange(const typename pcl::PointCloud<PCLPoint>& pointcloud_pcl, 
-                                    pcl::PointCloud<pcl::PointXYZ>& cloud_filter,
-                                    std::vector<openvdb::Vec3i>& color);
+  void filterptRange(const typename pcl::PointCloud<PCLPoint> &pointcloud_pcl,
+                     pcl::PointCloud<pcl::PointXYZ> &cloud_filter,
+                     std::vector<openvdb::Vec3i> &color);
 
   // IO.
   const Config &getConfig() const { return config_; }
 
-private:
+ private:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   // variables
   Config config_;
   vdbfusion::VDBVolume tsdf_volume, tsdf_volume_hdda;
   common::Transformer retrive_mpose;
-  
+
   // Node handles.
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -95,10 +96,10 @@ private:
 
   std::mutex m_fullmap, m_data;
 
-  std::queue<std::tuple<Eigen::Matrix4d, 
-                       std::vector<Eigen::Vector3d>,
-                       std::vector<openvdb::Vec3i>>> data_buf;
-  
+  std::queue<std::tuple<Eigen::Matrix4d, std::vector<Eigen::Vector3d>,
+                        std::vector<openvdb::Vec3i>>>
+      data_buf;
+
   std::thread integrate_thread;
 
   std::string _lidar_topic = "/odom_lidar";
@@ -106,6 +107,6 @@ private:
   bool color_pointcloud = false;
   int enqueue = 0, dequeue = 0;
 };
-} // namespace vdbfusion_mapping
+}  // namespace vdbfusion_mapping
 
 #endif
