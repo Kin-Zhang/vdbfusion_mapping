@@ -66,7 +66,7 @@ class VDBFusionMapper {
   // function
   void setConfig();
   void mapIntegrateProcess();
-
+  void VisuProcess();
   void processPointCloudMessage(
       const sensor_msgs::PointCloud2::ConstPtr &pointcloud_msg,
       const Eigen::Matrix4d &tf_matrix);
@@ -106,6 +106,8 @@ class VDBFusionMapper {
   bool _debug_print = true;
   bool color_pointcloud = false;
   int enqueue = 0, dequeue = 0;
+  bool open3d_vis = false;
+  double RESULT_PUBLISH_RATE = 1;
 };
 }  // namespace vdbfusion_mapping
 

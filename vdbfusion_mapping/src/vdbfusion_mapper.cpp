@@ -63,13 +63,66 @@ void VDBFusionMapper::mapIntegrateProcess() {
     tsdf_volume.Integrate(points, color, origin,
                           common::WeightFunction::constant_weight);
 
+    m_fullmap.lock();
     LOG_IF(INFO, _debug_print) << "cloud point size: " << points.size();
     TOC("TSDF Integrate", _debug_print);
-
+    m_fullmap.unlock();
     if (_debug_print)
       std::cout << "------------------------------------------------------"
                 << std::endl;
   }
+}
+void VDBFusionMapper::VisuProcess(){
+  bool is_geometry_added = false;
+  if(!open3d_vis)
+    return;
+
+  open3d::visualization::Visualizer vis;
+  vis.CreateVisualizerWindow("Open3D Mesh Visualization", 860, 640);
+  while(ros::ok()){
+    TIC;
+    // to point cloud
+    m_fullmap.lock();
+
+    auto [vertices, triangles, color_] = tsdf_volume.ExtractTriangleMesh(
+        config_.fill_holes_, config_.sdf_min_weight);
+
+    m_fullmap.unlock();
+
+    if(vertices.empty())
+      continue;
+
+    open3d::geometry::TriangleMesh mesh_o3d =
+        open3d::geometry::TriangleMesh(vertices, triangles);
+    mesh_o3d.ComputeVertexNormals();  
+    if (color_pointcloud && color_.size() != 0) {
+      mesh_o3d.vertex_colors_.reserve(mesh_o3d.vertices_.size());
+      for (size_t i = 0; i < mesh_o3d.vertices_.size(); i++) {
+        mesh_o3d.vertex_colors_.emplace_back(
+            color_[i][0] / 255.0, color_[i][1] / 255.0, color_[i][2] / 255.0);
+      }
+    }
+
+    if (!is_geometry_added) {
+      vis.AddGeometry(std::shared_ptr<open3d::geometry::TriangleMesh>(&mesh_o3d));
+      is_geometry_added = true;
+    }
+    auto GetViewControl = vis.GetViewControl();
+    GetViewControl.SetViewMatrices();
+    // GetViewControl.SetLookat();
+    GetViewControl.SetZoom(0.1);
+    GetViewControl.ChangeFieldOfView(90);
+    vis.UpdateGeometry();
+    vis.PollEvents();
+    vis.UpdateRender();
+
+    TOC("Open3D view", _debug_print);
+    if (RESULT_PUBLISH_RATE > 0) {
+      std::this_thread::sleep_for(
+          std::chrono::milliseconds(int(1e3 / RESULT_PUBLISH_RATE)));
+    }
+  }
+  vis.DestroyVisualizerWindow();
 }
 void VDBFusionMapper::points_callback(
     const sensor_msgs::PointCloud2::Ptr &input) {
@@ -193,7 +246,7 @@ bool VDBFusionMapper::saveMap_callback(
     auto map_ptr = map_cloud.makeShared();
     sensor_msgs::PointCloud2::Ptr map_msg_ptr(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*map_ptr, *map_msg_ptr);
-    map_msg_ptr->header.frame_id = "map";
+    map_msg_ptr->header.frame_id = retrive_mpose.getWorldframe();
     vdbmap_pub.publish(*map_msg_ptr);
     TOC("PUBLISH Color Msg", _debug_print);
     if (save_map_filter_res == 0.0)
@@ -225,7 +278,7 @@ bool VDBFusionMapper::saveMap_callback(
     auto map_ptr = map_cloud.makeShared();
     sensor_msgs::PointCloud2::Ptr map_msg_ptr(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*map_ptr, *map_msg_ptr);
-    map_msg_ptr->header.frame_id = "map";
+    map_msg_ptr->header.frame_id = retrive_mpose.getWorldframe();
     vdbmap_pub.publish(*map_msg_ptr);
     TOC("PUBLISH XYZ Msg", _debug_print);
     // Writing Point Cloud data to PCD file
@@ -292,6 +345,9 @@ void VDBFusionMapper::setConfig() {
   nh_private_.getParam("sdf_voxel_size", config_.sdf_voxel_size);
   nh_private_.getParam("sdf_deactivate", config_.sdf_deactivate);
   nh_private_.getParam("sdf_min_weight", config_.sdf_min_weight);
+  nh_private_.getParam("open3d_vis", open3d_vis);
+  nh_private_.getParam("vis_rate", RESULT_PUBLISH_RATE);
+  
 
   LOG(INFO) << "==========> Setting Config Success, start for running";
 }

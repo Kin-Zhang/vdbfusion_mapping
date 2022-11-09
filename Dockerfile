@@ -19,6 +19,7 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 RUN apt-get update && apt-get install --no-install-recommends -y \
     git \
     python3-pip \
+    ros-noetic-tf2-sensor-msgs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python3 utils

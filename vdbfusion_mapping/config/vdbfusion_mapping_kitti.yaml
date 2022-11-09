@@ -2,7 +2,9 @@
 lidar_topic: "/odom_lidar"
 pose_source: 2 # [0:tf_tree, 1:tf_topic, 2:odom_topic]
 odom_topic: "/auto_odom"
+
 world_frame: "map"
+child_frame: "lidar"
 
 debug_print: true
 

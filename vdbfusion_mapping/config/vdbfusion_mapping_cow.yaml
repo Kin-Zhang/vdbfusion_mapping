@@ -9,7 +9,9 @@ timestamp_tolerance_ms: 1
 world_frame: "map"
 
 debug_print: true
-
+open3d_vis: true
+vis_rate: 0.5
+# when -1 means no filter on range
 min_scan_range: -1.0 # Ignore points closer than this value (meters) (default 0.4)
 max_scan_range: 5.0 # Ignore points far than this value (meters) (default 12.0)
 max_height: 20.0 # ignore points higher than this value default 5.0

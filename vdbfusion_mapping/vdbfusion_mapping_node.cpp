@@ -22,6 +22,9 @@ int main(int argc, char **argv) {
   std::thread integrate_thread{
       &vdbfusion_mapping::VDBFusionMapper::mapIntegrateProcess, &mapper};
 
+  std::thread vis_thread{
+      &vdbfusion_mapping::VDBFusionMapper::VisuProcess, &mapper};
+
   // Setup spinning.
   ros::AsyncSpinner spinner(mapper.getConfig().ros_spinner_threads);
   spinner.start();

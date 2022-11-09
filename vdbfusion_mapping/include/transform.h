@@ -18,6 +18,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
 #include <Eigen/Core>
 #include <cmath>
 #include <deque>
@@ -58,15 +59,14 @@ inline void kindrT2Eigen(Eigen::Matrix4d& res, kindrQuatT& input) {
 class Transformer {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Transformer(){};
-  Transformer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  explicit Transformer(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
 
   virtual ~Transformer() = default;
 
   bool lookUpTransformfromSource(
       const sensor_msgs::PointCloud2::ConstPtr& input,
       Eigen::Matrix4d& tf_matrix);
-
+  inline std::string getWorldframe() {return world_frame_;};
  private:
   bool tfTreeRead(const ros::Time& timestamp, const ros::Duration& tolerance,
                   geometry_msgs::TransformStamped& transform);
@@ -77,7 +77,11 @@ class Transformer {
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
+
   tf::TransformListener tf_listener_;
+  tf2_ros::Buffer buffer_;
+  tf2_ros::TransformListener tf_;
+  
   ros::Subscriber tf_sub_, odom_sub_;
 
   // save all pose queue
@@ -88,6 +92,7 @@ class Transformer {
   int pose_source_ = -1;  // [0:tf_tree, 1:tf_topic, 2:odom_topic]
 
   std::string world_frame_ = "map";
+  std::string child_frame_ = "lidar";
 };
 
 }  // namespace common

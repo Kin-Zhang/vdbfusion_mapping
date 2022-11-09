@@ -61,17 +61,23 @@ save and pub map, open with visualization tools example image, .pcd file and .pl
 rosservice call /save_map '/workspace/data/test' 0.0
 ```
 
+### Results
+
+My own dataset with [Kin-Zhang/simple_ndt_slam](https://github.com/Kin-Zhang/simple_ndt_slam) give the pose and this repo to mapping
+
 ![](assets/readme/save_mesh_pcd.png)
 
 
 
 ![](assets/readme/cow_dataset.png)
 
-Meshlab view, If the bag have the RGB info in the msg like XYZRGB etc, the results could be like right one:
+[ETH Zurich ASL: Cow and Lady RGBD Dataset](https://projects.asl.ethz.ch/datasets/doku.php?id=iros2017) Meshlab view, If the bag have the RGB info in the msg like XYZRGB etc, the results could be like right one:
 
 ![](assets/readme/example_cow.png)
 
+Another dataset: [TU Munich RGB-D SLAM Dataset and Benchmark - FR1DESK2](https://vision.in.tum.de/data/datasets/rgbd-dataset) Test bag: `rgbd_dataset_freiburg3_long_office_household-2hz-with-pointclouds.bag`
 
+![](assets/readme/exmaple_fr2desk.png)
 
 ## Acknowledgement
 
