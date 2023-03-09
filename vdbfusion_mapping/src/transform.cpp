@@ -17,8 +17,9 @@ namespace common {
 
 Transformer::Transformer(const ros::NodeHandle &nh,
                          const ros::NodeHandle &nh_private)
-    : nh_(nh), nh_private_(nh_private) {
+    : nh_(nh), nh_private_(nh_private), buffer_(ros::Duration(50, 0)), tf_(buffer_) {
   nh_private_.getParam("world_frame", world_frame_);
+  nh_private_.getParam("child_frame", child_frame_);
   nh_private_.getParam("pose_source", pose_source_);
 
   double tolerance_ms;
@@ -72,16 +73,35 @@ bool Transformer::lookUpTransformfromSource(
     tf::StampedTransform T_G_C;
     // Previous behavior was just to use the latest transform if the time is in
     // the future. Now we will just wait.
-    if (!tf_listener_.canTransform(input->header.frame_id, world_frame_,
+    if (!tf_listener_.canTransform(world_frame_, child_frame_,
                                    timestamp)) {
+      std::string* msg;
+      int test = tf_listener_.getLatestCommonTime(world_frame_, child_frame_, timestamp, msg);
+      ros::Duration tolerance_ = ros::Duration(0, 1000);
+      // in case the bag use the tf2 !!!
+      if(buffer_.canTransform(world_frame_, child_frame_, timestamp, tolerance_)) {
+        geometry_msgs::TransformStamped tf_msg_;
+        tf_msg_ = buffer_.lookupTransform(world_frame_, child_frame_,  timestamp, tolerance_);
+        std::vector<double> pose = {tf_msg_.transform.translation.x, tf_msg_.transform.translation.y,
+                                    tf_msg_.transform.translation.z, tf_msg_.transform.rotation.w,
+                                    tf_msg_.transform.rotation.x,    tf_msg_.transform.rotation.y,
+                                    tf_msg_.transform.rotation.z};
+        kindrQuatT res(kindrRotaT(pose[3], pose[4], pose[5], pose[6]),
+                      Eigen::Matrix<double, 3, 1>(pose[0], pose[1], pose[2]));
+
+        kindrT2Eigen(tf_matrix, res);
+        return true;
+      }
+      LOG(WARNING) << "Please check the tf tree between: "
+                 << child_frame_ << " and " << world_frame_;
       return false;
     }
     try {
-      tf_listener_.lookupTransform(input->header.frame_id, world_frame_,
+      tf_listener_.lookupTransform(world_frame_, child_frame_,
                                    timestamp, T_G_C);
     } catch (tf::TransformException &ex) {  // NOLINT
       LOG(ERROR) << "Please check the tf tree between: "
-                 << input->header.frame_id << " and " << world_frame_;
+                 << child_frame_ << " and " << world_frame_;
       ROS_ERROR_STREAM(
           "Error getting TF transform from sensor data: " << ex.what());
     }
@@ -90,6 +110,7 @@ bool Transformer::lookUpTransformfromSource(
     tf::Quaternion rota = T_G_C.getRotation();
     transform2Eigen(tf_matrix, trans.getX(), trans.getY(), trans.getZ(),
                     rota.getW(), rota.getX(), rota.getY(), rota.getZ());
+    LOG(INFO) << tf_matrix;
     return true;
   } else {
     if (TimeWithPose_queue.empty()) {

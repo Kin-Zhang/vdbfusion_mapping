@@ -193,7 +193,7 @@ bool VDBFusionMapper::saveMap_callback(
     auto map_ptr = map_cloud.makeShared();
     sensor_msgs::PointCloud2::Ptr map_msg_ptr(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*map_ptr, *map_msg_ptr);
-    map_msg_ptr->header.frame_id = "map";
+    map_msg_ptr->header.frame_id = retrive_mpose.getWorldframe();
     vdbmap_pub.publish(*map_msg_ptr);
     TOC("PUBLISH Color Msg", _debug_print);
     if (save_map_filter_res == 0.0)
@@ -225,7 +225,7 @@ bool VDBFusionMapper::saveMap_callback(
     auto map_ptr = map_cloud.makeShared();
     sensor_msgs::PointCloud2::Ptr map_msg_ptr(new sensor_msgs::PointCloud2);
     pcl::toROSMsg(*map_ptr, *map_msg_ptr);
-    map_msg_ptr->header.frame_id = "map";
+    map_msg_ptr->header.frame_id = retrive_mpose.getWorldframe();
     vdbmap_pub.publish(*map_msg_ptr);
     TOC("PUBLISH XYZ Msg", _debug_print);
     // Writing Point Cloud data to PCD file

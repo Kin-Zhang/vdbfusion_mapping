@@ -4,6 +4,8 @@ for glog, please just run the script directly
 cd [YOUR VDBMAPPING WS]/src
 sudo chmod +x ./assets/scripts/setup_lib.sh
 ./assets/scripts/setup_lib.sh
+
+sudo apt install ros-$ROS_DISTRO-tf2-sensor-msgs
 ```
 
 Then just install the OpenVDB is enough, but if you want to save the rgb mesh or visualize real-time, Open3D is needed
